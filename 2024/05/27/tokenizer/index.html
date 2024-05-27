@@ -20,28 +20,33 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Hexo">
-<meta property="og:url" content="http://example.com/index.html">
+  <meta name="description" content="Tokenizer对于英语这种语言，虽然单词之间已经有了空格分隔符，但是如果只是用空格进行切分，会导致数据稀疏问题。英语的单词往往具有复杂的词形变换，传统的处理方法是根据语言学规则，引入词形还原（Lemmatization）或者词干提取（Stemming），提取出单词的词根，从而在一定程度上缓降数据稀疏问题。但是这种方法需要人工编写大量的规则，同时不易扩展到新领域，因此现在流行基于统计的无监督子词">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Tokenizer">
+<meta property="og:url" content="http://example.com/2024/05/27/tokenizer/index.html">
 <meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Tokenizer对于英语这种语言，虽然单词之间已经有了空格分隔符，但是如果只是用空格进行切分，会导致数据稀疏问题。英语的单词往往具有复杂的词形变换，传统的处理方法是根据语言学规则，引入词形还原（Lemmatization）或者词干提取（Stemming），提取出单词的词根，从而在一定程度上缓降数据稀疏问题。但是这种方法需要人工编写大量的规则，同时不易扩展到新领域，因此现在流行基于统计的无监督子词">
 <meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-05-27T14:02:13.000Z">
+<meta property="article:modified_time" content="2024-05-27T14:27:08.319Z">
 <meta property="article:author" content="suhejian">
+<meta property="article:tag" content="自然语言处理">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://example.com/">
+<link rel="canonical" href="http://example.com/2024/05/27/tokenizer/">
 
 
 <script id="page-configurations">
   // https://hexo.io/docs/variables.html
   CONFIG.page = {
     sidebar: "",
-    isHome : true,
-    isPost : false,
+    isHome : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>Hexo</title>
+  <title>Tokenizer | Hexo</title>
   
 
 
@@ -139,9 +144,10 @@
         <div class="content-wrap">
           
 
-          <div class="content index posts-expand">
+          <div class="content post posts-expand">
             
-      
+
+    
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
@@ -157,10 +163,9 @@
       <meta itemprop="name" content="Hexo">
     </span>
       <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2024/05/27/tokenizer/" class="post-title-link" itemprop="url">Tokenizer</a>
-        </h2>
+        <h1 class="post-title" itemprop="name headline">
+          Tokenizer
+        </h1>
 
         <div class="post-meta">
             <span class="post-meta-item">
@@ -184,7 +189,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1 id="Tokenizer"><a href="#Tokenizer" class="headerlink" title="Tokenizer"></a>Tokenizer</h1><p>对于英语这种语言，虽然单词之间已经有了空格分隔符，但是如果只是用空格进行切分，会导致<strong>数据稀疏</strong>问题。英语的单词往往具有复杂的词形变换，传统的处理方法是根据语言学规则，引入<strong>词形还原</strong>（Lemmatization）或者<strong>词干提取</strong>（Stemming），提取出单词的词根，从而在一定程度上缓降数据稀疏问题。但是这种方法需要人工编写大量的规则，同时不易扩展到新领域，因此现在流行<strong>基于统计的</strong>无监督子词（Subword）切分。</p>
+        <h1 id="Tokenizer"><a href="#Tokenizer" class="headerlink" title="Tokenizer"></a>Tokenizer</h1><p>对于英语这种语言，虽然单词之间已经有了空格分隔符，但是如果只是用空格进行切分，会导致<strong>数据稀疏</strong>问题。英语的单词往往具有复杂的词形变换，传统的处理方法是根据语言学规则，引入<strong>词形还原</strong>（Lemmatization）或者<strong>词干提取</strong>（Stemming），提取出单词的词根，从而在一定程度上缓降数据稀疏问题。但是这种方法需要人工编写大量的规则，同时不易扩展到新领域，因此现在流行<strong>基于统计的</strong>无监督子词（Subword）切分。</p>
 <p>子词分词算法基于这样一个原则：不应该将<strong>常用词</strong>拆分为更小的子词，应该将<strong>稀有词</strong>分解为有意义的子词。</p>
 <p>子词切分技术分为以下几种：</p>
 <table>
@@ -226,21 +231,26 @@
 </li>
 </ol>
 
-      
     </div>
 
     
     
     
+
       <footer class="post-footer">
-        <div class="post-eof"></div>
+          <div class="post-tags">
+              <a href="/tags/%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/" rel="tag"># 自然语言处理</a>
+          </div>
+
+        
+
+
+        
       </footer>
+    
   </article>
   
   
-  
-
-
   
 
 
@@ -293,6 +303,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Tokenizer"><span class="nav-number">1.</span> <span class="nav-text">Tokenizer</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#BPE"><span class="nav-number">1.1.</span> <span class="nav-text">BPE</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
