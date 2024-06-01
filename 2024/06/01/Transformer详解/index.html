@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://suhejian.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.1',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":true},
+    copycode: {"enable":true,"show_result":true,"style":null},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":true,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="较为详细地介绍了Transformer模型架构，包括其内部的Multi Head Attention模块，Position-wise Feed Forward模块和Position Embedding模块。Transformer可以说是LLM的基石，需要重点掌握。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Transformer详解">
+<meta property="og:url" content="https://suhejian.github.io/2024/06/01/Transformer%E8%AF%A6%E8%A7%A3/index.html">
+<meta property="og:site_name" content="摸鱼日记">
+<meta property="og:description" content="较为详细地介绍了Transformer模型架构，包括其内部的Multi Head Attention模块，Position-wise Feed Forward模块和Position Embedding模块。Transformer可以说是LLM的基石，需要重点掌握。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://suhejian.github.io/2024/06/01/Transformer%E8%AF%A6%E8%A7%A3/transformer-architecture.png">
+<meta property="article:published_time" content="2024-06-01T14:32:28.000Z">
+<meta property="article:modified_time" content="2024-06-01T14:56:19.703Z">
+<meta property="article:author" content="suhejian">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://suhejian.github.io/2024/06/01/Transformer%E8%AF%A6%E8%A7%A3/transformer-architecture.png">
+
+<link rel="canonical" href="https://suhejian.github.io/2024/06/01/Transformer%E8%AF%A6%E8%A7%A3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>Transformer详解 | 摸鱼日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">摸鱼日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">输出倒逼思考</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">1</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">2</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <a href="https://github.com/suhejian" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://suhejian.github.io/2024/06/01/Transformer%E8%AF%A6%E8%A7%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="suhejian">
+      <meta itemprop="description" content="Stay hungry, stay foolish.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="摸鱼日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Transformer详解
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-06-01 22:32:28 / 修改时间：22:56:19" itemprop="dateCreated datePublished" datetime="2024-06-01T22:32:28+08:00">2024-06-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E5%A4%84%E7%90%86/" itemprop="url" rel="index">
+                    <span itemprop="name">自然语言处理</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">较为详细地介绍了Transformer模型架构，包括其内部的Multi Head Attention模块，Position-wise Feed Forward模块和Position Embedding模块。Transformer可以说是LLM的基石，需要重点掌握。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>原文是<code>Attention Is All You Need</code> <a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1706.03762">文章链接</a></p>
+<p>经典的Transformer架构图，梦开始的地方~<br><img src="/2024/06/01/Transformer%E8%AF%A6%E8%A7%A3/transformer-architecture.png" class="" title="架构图"></p>
+<p><strong>Transformer模型架构的特点</strong>：</p>
+<ul>
+<li>基于Encoder-Decoder架构</li>
+<li>完全基于注意力机制（输入与输入，输入与输出，输出与输出，对应三种注意力机制），不使用递归或者卷积操作</li>
+<li>支持并行运算，训练速度更快</li>
+</ul>
+<p><strong>Transformer模型架构相较于之前模型的优势</strong>：</p>
+<ul>
+<li>诸如LSTM这样的模型计算当前时刻的隐藏状态时，依赖于前一时刻的隐藏状态，这种序列特征妨碍了并行训练</li>
+<li>使用CNN这样的模型试图并行计算隐藏层状态时，难以捕获远距离位置之间的依赖关系</li>
+<li>对于长序列来说，随着长度增加，对记忆模块的要求会越来越高，而Transformer每个位置独立地关注其它位置</li>
+</ul>
+<h2 id="模型架构"><a href="#模型架构" class="headerlink" title="模型架构"></a>模型架构</h2><p>整体还是Encoder-Decoder架构，其中Encoder模块将输入序列映射为中间表示，该中间表示作为Decoder模块输入的一部分。Decoder模块的另一部分输入是<strong>已经解码的序列</strong>。整体的生成过程是<strong>自回归</strong>（auto-regressive）的，也就是每一步生成一个token。</p>
+<p>Encoder包含6层，每层有两个子层：</p>
+<ul>
+<li>多头注意力层</li>
+<li>position-wise的全连接层</li>
+</ul>
+<p>每个子层都有<strong>残差连接+Layer Normalization</strong>模块，即每个子层的输出是：$LayerNorm(x + Sublayer(x))$。模型中所有的embedding维度都是512。</p>
+<p>Decoder也包含6层，每层有三个子层。相较于Encoder部分，额外多的一个子层是<strong>对Encoder模块的输出进行多头注意力操作</strong>。</p>
+<p>此外，Decoder部分的注意力子层和Encoder部分的略有不同，它将当前位置及后续位置mask掉，从而只关注已解码部分。</p>
+<h3 id="注意力模块"><a href="#注意力模块" class="headerlink" title="注意力模块"></a>注意力模块</h3><h4 id="自注意力机制"><a href="#自注意力机制" class="headerlink" title="自注意力机制"></a>自注意力机制</h4><p><code>self-attention</code>，也叫<code>intra-attention</code>，内部注意力。该注意力机制将单个序列的不同位置联系起来，以计算该序列的表示（其实每个位置的token都会有相应的隐藏层表示，只不过原始论文中的任务是机器翻译，所以需要获取序列的表示）。</p>
+<p>注意力函数的本质是，将一个<code>query</code>和一组<code>key-value</code>对映射为一个输出。对于自然语言处理任务来说，当前词就是<code>query</code>，其它位置的词就是<code>key</code>，至于<code>value</code>通常和<code>key</code>保持一致。在计算时，不管是<code>query</code>还是<code>key</code>，<code>value</code>，都是向量。<br>论文中使用的是<code>Scaled Dot-Product Attention</code>：</p>
+<script type="math/tex; mode=display">Attention(Q,K,V)=softmax(\frac{QK^{T}}{\sqrt{d_k}})V</script><p>代码实现：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">attention</span>(<span class="params">query, key, value, mask=<span class="literal">None</span>, dropout=<span class="literal">None</span></span>):</span><br><span class="line">    d_k = query.size(-<span class="number">1</span>)</span><br><span class="line">    scores = torch.matmul(query, key.transpose(-<span class="number">2</span>, -<span class="number">1</span>)) / math.sqrt(d_k)</span><br><span class="line">    <span class="keyword">if</span> mask <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        scores = scores.masked_fill(mask == <span class="number">0</span>, -<span class="number">1e9</span>)</span><br><span class="line">    p_attn = scores.softmax(dim=-<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">if</span> dropout <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        p_attn = dropout(p_attn)</span><br><span class="line">    <span class="keyword">return</span> torch.matmul(p_attn, value), p_attn</span><br></pre></td></tr></table></figure></p>
+<p><strong>使用Scaled Dot-Product Attention的原因：</strong></p>
+<p>最常使用的两个注意力函数是<strong>additive attention</strong>和<strong>dot-product (multiplicative) attention</strong>。</p>
+<p>其中<code>additive attention</code>使用前馈神经网络计算相似度，该神经网络仅有一层隐藏层（涉及线性变换、求和与非线性激活函数如<code>tanh</code>、权重计算和加权求和等步骤）。</p>
+<p>虽然两者的理论复杂度差不多，但是使用优化的矩阵乘法时，<code>dot-product attention</code>的<strong>计算速度</strong>会快很多，而且<strong>空间效率</strong>也更高。在<code>key</code>对应的向量维度比较小的时候，两者的表现差不多，但是随着向量维度增大，<code>additive attention</code>的表现会超过<code>dot product attention</code>。为了克服这个问题，论文中增加了<code>scaling factor</code>以提升表现。</p>
+<p>对此，论文作者猜测，随着向量维度增大，点积的结果在数值上也会增加，这导致进行<code>softmax</code>计算时这些区域的梯度会变得非常小。</p>
+<p>至于<code>scaling factor</code>为什么设定为$\sqrt{d_k}$，有说法是：假设每个维度的分布都是均值为0，方差为1的正态分布，那么缩放后依旧保持了均值为0，方差为1的正态分布。</p>
+<h4 id="多头注意力机制"><a href="#多头注意力机制" class="headerlink" title="多头注意力机制"></a>多头注意力机制</h4><p>多头注意力机制分别将<code>queries</code>，<code>keys</code>和<code>values</code>用不同的、可学习的线性映射层，线性映射多次，每个映射结果可以看作子<code>queries</code>，子<code>keys</code>和子<code>values</code>。对每一组<code>queries</code>，<code>keys</code>和<code>values</code>，<strong>并行</strong>进行自注意力操作，之后将每一组的结果<strong>拼接</strong>，最后再对拼接的结果做映射，得到最终的结果。</p>
+<script type="math/tex; mode=display">MultiHead(Q,K,V)=Concat(head_1,...,head_h)W^O \\
+head_{i}=Attention(QW_i^Q, KW_i^K, VW_i^V)</script><p>代码实现：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MultiHeadedAttention</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, num_head, d_model, dropout=<span class="number">0.1</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(MultiHeadedAttention, self).__init__()</span><br><span class="line">        <span class="keyword">assert</span> d_model % num_head == <span class="number">0</span></span><br><span class="line">        self.d_k = d_model // num_head</span><br><span class="line">        slef.num_head = num_head</span><br><span class="line">        <span class="comment"># clones函数用于拷贝nn.Module，这里没写</span></span><br><span class="line">        self.linears = clones(nn.Linear(d_model, d_model), <span class="number">4</span>)</span><br><span class="line">        self.dropout = nn.Dropout(p=dropout)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, query, key, value, mask=<span class="literal">None</span></span>):</span><br><span class="line">        <span class="keyword">if</span> mask <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="comment"># same mask applied to all num_head heads.</span></span><br><span class="line">            mask = mask.unsqueeze(<span class="number">1</span>)</span><br><span class="line">        n_batches = query.size(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 1) Do all the linear projections in batch, d_model -&gt; num_head * d_k</span></span><br><span class="line">        query, key, value = [</span><br><span class="line">            lin(x).view(n_batches, -<span class="number">1</span>, self.num_head, self.d_k).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">            <span class="keyword">for</span> lin, x <span class="keyword">in</span> <span class="built_in">zip</span>(self.linears, (query, key, value))</span><br><span class="line">        ]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 2) Apply attention on all the projected vectors in batch.</span></span><br><span class="line">        x, self.attn = attention(</span><br><span class="line">            query, key, value, mask=mask, dropout=self.dropout</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 3) &quot;Concat&quot; using a view and apply a final linear.</span></span><br><span class="line">        x = (</span><br><span class="line">            x.transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">            .contiguous()</span><br><span class="line">            .view(n_batches, -<span class="number">1</span>, self.num_head * self.d_k)</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        <span class="keyword">del</span> query</span><br><span class="line">        <span class="keyword">del</span> key</span><br><span class="line">        <span class="keyword">del</span> value</span><br><span class="line">        <span class="keyword">return</span> self.linears[-<span class="number">1</span>](x)</span><br></pre></td></tr></table></figure></p>
+<p><strong>多头注意力机制的优势</strong></p>
+<p>多头注意力机制使得每个头可以关注输入序列中不同位置的信息，并从<strong>不同的表示子空间</strong>中提取有用的特征。举个例子，使用多头注意力机制找出句子中所有重要的名词时，一个头可能专注于句子中的主语，另一个头可能关注宾语，还有一个头关注其它类型的名词短语。每个头都会<strong>独立</strong>地计算权重，然后这些权重会被组合起来，以产生一个更加全面的表示，这个表示会同时考虑多个子空间的信息。</p>
+<p>三种使用方式：</p>
+<ul>
+<li>Encoder-Decoder：<code>queries</code>来自之前的decoder层，<code>keys</code>和<code>values</code>是encoder的输出</li>
+<li>Encoder：<code>queries</code>、<code>keys</code>和<code>values</code>都来源于同一个地方，即encoder中上一层的输出</li>
+<li>Decoder：和Encoder部分类似，不过不同于Encoder部分能关注所有位置，Decoder部分只能关注当前位置之前的元素</li>
+</ul>
+<h3 id="逐位置的前馈神经网络"><a href="#逐位置的前馈神经网络" class="headerlink" title="逐位置的前馈神经网络"></a>逐位置的前馈神经网络</h3><p>每一个位置分别有对应的全连接的前馈神经网络。</p>
+<script type="math/tex; mode=display">FFN(x)=max(0, xW_1 + b_1) W_2 + b_2</script><p>代码实现：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PositionwiseFeedForward</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model, d_ff, dropout=<span class="number">0.1</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(PositionwiseFeedForward, self).__init__()</span><br><span class="line">        self.w_1 = nn.Linear(d_model, d_ff)</span><br><span class="line">        self.w_2 = nn.Linear(d_ff, d_model)</span><br><span class="line">        self.dropout = nn.Dropout(dropout)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">return</span> self.w_2(self.dropout(self.w_1(x).relu()))</span><br></pre></td></tr></table></figure></p>
+<p>虽然不同位置的线性变换是一样的，但是每一层使用的参数是不同的。</p>
+<h3 id="位置编码"><a href="#位置编码" class="headerlink" title="位置编码"></a>位置编码</h3><p>由于自注意力机制对待每个位置都是一样的，为了利用序列信息，模型引入了<code>Positional Embedding</code>，从而注入<strong>相对位置信息</strong>和<strong>绝对位置信息</strong>。具体来说，直接将<code>positional embeddings</code>和<code>input embeddings</code>相加，维度也保持一致。</p>
+<script type="math/tex; mode=display">PE_{(pos, 2i)}=sin(pos / 10000^{2i / d_{model}}) \\
+PE_{(pos, 2i+1)}=cos(pos / 10000^{2i / d_{model}})</script><p>其中$pos$是位置，$i$是维度。</p>
+<p>代码实现：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> troch</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PositionalEncoding</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model, dropout, max_len=<span class="number">50000</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(PositionalEncoding, self).__init__()</span><br><span class="line">        self.dropout = nn.Dropout(p=dropout)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># compute the positional encodings</span></span><br><span class="line">        pe = torch.zeros(max_len, d_model)</span><br><span class="line">        position = torch.arange(<span class="number">0</span>, max_len).unsqueeze(<span class="number">1</span>)</span><br><span class="line">        div_term = torch.exp(</span><br><span class="line">            torch.arange(<span class="number">0</span>, d_model, <span class="number">2</span>) * -(math.log(<span class="number">10000.0</span>) / d_model)</span><br><span class="line">        )</span><br><span class="line">        pe[:, <span class="number">0</span>::<span class="number">2</span>] = torch.sin(position * div_term)</span><br><span class="line">        pe[:, <span class="number">1</span>::<span class="number">2</span>] = torch.cos(position * div_term)</span><br><span class="line">        pe = pe.unsqueeze(<span class="number">0</span>)</span><br><span class="line">        self.register_buffer(<span class="string">&quot;pe&quot;</span>, pe)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = x + self.pe[:, : x.size(<span class="number">1</span>)].requires_grad_(<span class="literal">False</span>)</span><br><span class="line">        <span class="keyword">return</span> self.dropout(x)</span><br></pre></td></tr></table></figure></p>
+<p><strong>关于Positional Embeddings的选择</strong></p>
+<p>论文作者也使用了可学习的<code>positional embeddings</code>，效果和余弦版本差不多。不过作者最终还是选择了余弦版本的<code>positional embeddings</code>，对此，作者的解释是，这可能允许模型外推到更长的序列（相比于训练过程）。</p>
+<h2 id="训练过程"><a href="#训练过程" class="headerlink" title="训练过程"></a>训练过程</h2><p><code>Attention Is All You Need</code>这篇文章本身是为了解决<strong>机器翻译</strong>任务提出的，因此也是按照机器翻译来<strong>从头开始训练</strong>的，不存在预训练。</p>
+<p>后续的BERT，GPT等预训练语言模型则是采用了Transformer架构，在大量的无标注语料上进行<strong>自监督学习</strong>，即通过某种策略为无标注语料构造标签，然后再以监督学习的方式进行训练。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/06/01/Tokenizer%E5%9F%BA%E7%A1%80%E7%AF%87/" rel="prev" title="Tokenizer基础篇">
+      <i class="fa fa-chevron-left"></i> Tokenizer基础篇
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E6%9E%B6%E6%9E%84"><span class="nav-text">模型架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E5%8A%9B%E6%A8%A1%E5%9D%97"><span class="nav-text">注意力模块</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%87%AA%E6%B3%A8%E6%84%8F%E5%8A%9B%E6%9C%BA%E5%88%B6"><span class="nav-text">自注意力机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%9A%E5%A4%B4%E6%B3%A8%E6%84%8F%E5%8A%9B%E6%9C%BA%E5%88%B6"><span class="nav-text">多头注意力机制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%90%E4%BD%8D%E7%BD%AE%E7%9A%84%E5%89%8D%E9%A6%88%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C"><span class="nav-text">逐位置的前馈神经网络</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81"><span class="nav-text">位置编码</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E8%BF%87%E7%A8%8B"><span class="nav-text">训练过程</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">suhejian</p>
+  <div class="site-description" itemprop="description">Stay hungry, stay foolish.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/suhejian" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;suhejian" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">suhejian</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v7.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.1
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+<script type="text/x-mathjax-config">
+    MathJax.Ajax.config.path['mhchem'] = '//cdn.jsdelivr.net/npm/mathjax-mhchem@3';
+
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$', '$'], ['\\(', '\\)'] ],
+      processEscapes: true,
+      skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    },
+    TeX: {
+        extensions: ['[mhchem]/mhchem.js'],
+      equationNumbers: {
+        autoNumber: 'AMS'
+      }
+    }
+  });
+
+  MathJax.Hub.Register.StartupHook('TeX Jax Ready', function() {
+    MathJax.InputJax.TeX.prefilterHooks.Add(function(data) {
+      if (data.display) {
+        var next = data.script.nextSibling;
+        while (next && next.nodeName.toLowerCase() === '#text') {
+          next = next.nextSibling;
+        }
+        if (next && next.nodeName.toLowerCase() === 'br') {
+          next.parentNode.removeChild(next);
+        }
+      }
+    });
+  });
+
+  MathJax.Hub.Queue(function() {
+    var all = MathJax.Hub.getAllJax(), i;
+    for (i = 0; i < all.length; i += 1) {
+      element = document.getElementById(all[i].inputID + '-Frame').parentNode;
+      if (element.nodeName.toLowerCase() == 'li') {
+        element = element.parentNode;
+      }
+      element.classList.add('has-jax');
+    }
+  });
+</script>
+<script>
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML', () => {
+    MathJax.Hub.Typeset();
+  }, window.MathJax);
+</script>
+
+    
+
+  
+
+</body>
+</html>

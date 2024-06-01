@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>Transformer详解</title>
+    <url>/2024/06/01/Transformer%E8%AF%A6%E8%A7%A3/</url>
+    <content><![CDATA[<p>原文是<code>Attention Is All You Need</code> <a href="https://arxiv.org/pdf/1706.03762">文章链接</a></p>
+<p>经典的Transformer架构图，梦开始的地方~<br><img src="/2024/06/01/Transformer%E8%AF%A6%E8%A7%A3/transformer-architecture.png" class="" title="架构图"></p>
+<p><strong>Transformer模型架构的特点</strong>：</p>
+<ul>
+<li>基于Encoder-Decoder架构</li>
+<li>完全基于注意力机制（输入与输入，输入与输出，输出与输出，对应三种注意力机制），不使用递归或者卷积操作</li>
+<li>支持并行运算，训练速度更快</li>
+</ul>
+<p><strong>Transformer模型架构相较于之前模型的优势</strong>：</p>
+<ul>
+<li>诸如LSTM这样的模型计算当前时刻的隐藏状态时，依赖于前一时刻的隐藏状态，这种序列特征妨碍了并行训练</li>
+<li>使用CNN这样的模型试图并行计算隐藏层状态时，难以捕获远距离位置之间的依赖关系</li>
+<li>对于长序列来说，随着长度增加，对记忆模块的要求会越来越高，而Transformer每个位置独立地关注其它位置</li>
+</ul>
+<h2 id="模型架构"><a href="#模型架构" class="headerlink" title="模型架构"></a>模型架构</h2><p>整体还是Encoder-Decoder架构，其中Encoder模块将输入序列映射为中间表示，该中间表示作为Decoder模块输入的一部分。Decoder模块的另一部分输入是<strong>已经解码的序列</strong>。整体的生成过程是<strong>自回归</strong>（auto-regressive）的，也就是每一步生成一个token。</p>
+<p>Encoder包含6层，每层有两个子层：</p>
+<ul>
+<li>多头注意力层</li>
+<li>position-wise的全连接层</li>
+</ul>
+<p>每个子层都有<strong>残差连接+Layer Normalization</strong>模块，即每个子层的输出是：$LayerNorm(x + Sublayer(x))$。模型中所有的embedding维度都是512。</p>
+<p>Decoder也包含6层，每层有三个子层。相较于Encoder部分，额外多的一个子层是<strong>对Encoder模块的输出进行多头注意力操作</strong>。</p>
+<p>此外，Decoder部分的注意力子层和Encoder部分的略有不同，它将当前位置及后续位置mask掉，从而只关注已解码部分。</p>
+<h3 id="注意力模块"><a href="#注意力模块" class="headerlink" title="注意力模块"></a>注意力模块</h3><h4 id="自注意力机制"><a href="#自注意力机制" class="headerlink" title="自注意力机制"></a>自注意力机制</h4><p><code>self-attention</code>，也叫<code>intra-attention</code>，内部注意力。该注意力机制将单个序列的不同位置联系起来，以计算该序列的表示（其实每个位置的token都会有相应的隐藏层表示，只不过原始论文中的任务是机器翻译，所以需要获取序列的表示）。</p>
+<p>注意力函数的本质是，将一个<code>query</code>和一组<code>key-value</code>对映射为一个输出。对于自然语言处理任务来说，当前词就是<code>query</code>，其它位置的词就是<code>key</code>，至于<code>value</code>通常和<code>key</code>保持一致。在计算时，不管是<code>query</code>还是<code>key</code>，<code>value</code>，都是向量。<br>论文中使用的是<code>Scaled Dot-Product Attention</code>：</p>
+<script type="math/tex; mode=display">Attention(Q,K,V)=softmax(\frac{QK^{T}}{\sqrt{d_k}})V</script><p>代码实现：<br><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">attention</span>(<span class="params">query, key, value, mask=<span class="literal">None</span>, dropout=<span class="literal">None</span></span>):</span><br><span class="line">    d_k = query.size(-<span class="number">1</span>)</span><br><span class="line">    scores = torch.matmul(query, key.transpose(-<span class="number">2</span>, -<span class="number">1</span>)) / math.sqrt(d_k)</span><br><span class="line">    <span class="keyword">if</span> mask <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        scores = scores.masked_fill(mask == <span class="number">0</span>, -<span class="number">1e9</span>)</span><br><span class="line">    p_attn = scores.softmax(dim=-<span class="number">1</span>)</span><br><span class="line">    <span class="keyword">if</span> dropout <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">        p_attn = dropout(p_attn)</span><br><span class="line">    <span class="keyword">return</span> torch.matmul(p_attn, value), p_attn</span><br></pre></td></tr></table></figure></p>
+<p><strong>使用Scaled Dot-Product Attention的原因：</strong></p>
+<p>最常使用的两个注意力函数是<strong>additive attention</strong>和<strong>dot-product (multiplicative) attention</strong>。</p>
+<p>其中<code>additive attention</code>使用前馈神经网络计算相似度，该神经网络仅有一层隐藏层（涉及线性变换、求和与非线性激活函数如<code>tanh</code>、权重计算和加权求和等步骤）。</p>
+<p>虽然两者的理论复杂度差不多，但是使用优化的矩阵乘法时，<code>dot-product attention</code>的<strong>计算速度</strong>会快很多，而且<strong>空间效率</strong>也更高。在<code>key</code>对应的向量维度比较小的时候，两者的表现差不多，但是随着向量维度增大，<code>additive attention</code>的表现会超过<code>dot product attention</code>。为了克服这个问题，论文中增加了<code>scaling factor</code>以提升表现。</p>
+<p>对此，论文作者猜测，随着向量维度增大，点积的结果在数值上也会增加，这导致进行<code>softmax</code>计算时这些区域的梯度会变得非常小。</p>
+<p>至于<code>scaling factor</code>为什么设定为$\sqrt{d_k}$，有说法是：假设每个维度的分布都是均值为0，方差为1的正态分布，那么缩放后依旧保持了均值为0，方差为1的正态分布。</p>
+<h4 id="多头注意力机制"><a href="#多头注意力机制" class="headerlink" title="多头注意力机制"></a>多头注意力机制</h4><p>多头注意力机制分别将<code>queries</code>，<code>keys</code>和<code>values</code>用不同的、可学习的线性映射层，线性映射多次，每个映射结果可以看作子<code>queries</code>，子<code>keys</code>和子<code>values</code>。对每一组<code>queries</code>，<code>keys</code>和<code>values</code>，<strong>并行</strong>进行自注意力操作，之后将每一组的结果<strong>拼接</strong>，最后再对拼接的结果做映射，得到最终的结果。</p>
+<script type="math/tex; mode=display">MultiHead(Q,K,V)=Concat(head_1,...,head_h)W^O \\
+head_{i}=Attention(QW_i^Q, KW_i^K, VW_i^V)</script><p>代码实现：<br><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MultiHeadedAttention</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, num_head, d_model, dropout=<span class="number">0.1</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(MultiHeadedAttention, self).__init__()</span><br><span class="line">        <span class="keyword">assert</span> d_model % num_head == <span class="number">0</span></span><br><span class="line">        self.d_k = d_model // num_head</span><br><span class="line">        slef.num_head = num_head</span><br><span class="line">        <span class="comment"># clones函数用于拷贝nn.Module，这里没写</span></span><br><span class="line">        self.linears = clones(nn.Linear(d_model, d_model), <span class="number">4</span>)</span><br><span class="line">        self.dropout = nn.Dropout(p=dropout)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, query, key, value, mask=<span class="literal">None</span></span>):</span><br><span class="line">        <span class="keyword">if</span> mask <span class="keyword">is</span> <span class="keyword">not</span> <span class="literal">None</span>:</span><br><span class="line">            <span class="comment"># same mask applied to all num_head heads.</span></span><br><span class="line">            mask = mask.unsqueeze(<span class="number">1</span>)</span><br><span class="line">        n_batches = query.size(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 1) Do all the linear projections in batch, d_model -&gt; num_head * d_k</span></span><br><span class="line">        query, key, value = [</span><br><span class="line">            lin(x).view(n_batches, -<span class="number">1</span>, self.num_head, self.d_k).transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">            <span class="keyword">for</span> lin, x <span class="keyword">in</span> <span class="built_in">zip</span>(self.linears, (query, key, value))</span><br><span class="line">        ]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 2) Apply attention on all the projected vectors in batch.</span></span><br><span class="line">        x, self.attn = attention(</span><br><span class="line">            query, key, value, mask=mask, dropout=self.dropout</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 3) &quot;Concat&quot; using a view and apply a final linear.</span></span><br><span class="line">        x = (</span><br><span class="line">            x.transpose(<span class="number">1</span>, <span class="number">2</span>)</span><br><span class="line">            .contiguous()</span><br><span class="line">            .view(n_batches, -<span class="number">1</span>, self.num_head * self.d_k)</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        <span class="keyword">del</span> query</span><br><span class="line">        <span class="keyword">del</span> key</span><br><span class="line">        <span class="keyword">del</span> value</span><br><span class="line">        <span class="keyword">return</span> self.linears[-<span class="number">1</span>](x)</span><br></pre></td></tr></table></figure></p>
+<p><strong>多头注意力机制的优势</strong></p>
+<p>多头注意力机制使得每个头可以关注输入序列中不同位置的信息，并从<strong>不同的表示子空间</strong>中提取有用的特征。举个例子，使用多头注意力机制找出句子中所有重要的名词时，一个头可能专注于句子中的主语，另一个头可能关注宾语，还有一个头关注其它类型的名词短语。每个头都会<strong>独立</strong>地计算权重，然后这些权重会被组合起来，以产生一个更加全面的表示，这个表示会同时考虑多个子空间的信息。</p>
+<p>三种使用方式：</p>
+<ul>
+<li>Encoder-Decoder：<code>queries</code>来自之前的decoder层，<code>keys</code>和<code>values</code>是encoder的输出</li>
+<li>Encoder：<code>queries</code>、<code>keys</code>和<code>values</code>都来源于同一个地方，即encoder中上一层的输出</li>
+<li>Decoder：和Encoder部分类似，不过不同于Encoder部分能关注所有位置，Decoder部分只能关注当前位置之前的元素</li>
+</ul>
+<h3 id="逐位置的前馈神经网络"><a href="#逐位置的前馈神经网络" class="headerlink" title="逐位置的前馈神经网络"></a>逐位置的前馈神经网络</h3><p>每一个位置分别有对应的全连接的前馈神经网络。</p>
+<script type="math/tex; mode=display">FFN(x)=max(0, xW_1 + b_1) W_2 + b_2</script><p>代码实现：<br><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PositionwiseFeedForward</span>(nn.Module):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model, d_ff, dropout=<span class="number">0.1</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(PositionwiseFeedForward, self).__init__()</span><br><span class="line">        self.w_1 = nn.Linear(d_model, d_ff)</span><br><span class="line">        self.w_2 = nn.Linear(d_ff, d_model)</span><br><span class="line">        self.dropout = nn.Dropout(dropout)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        <span class="keyword">return</span> self.w_2(self.dropout(self.w_1(x).relu()))</span><br></pre></td></tr></table></figure></p>
+<p>虽然不同位置的线性变换是一样的，但是每一层使用的参数是不同的。</p>
+<h3 id="位置编码"><a href="#位置编码" class="headerlink" title="位置编码"></a>位置编码</h3><p>由于自注意力机制对待每个位置都是一样的，为了利用序列信息，模型引入了<code>Positional Embedding</code>，从而注入<strong>相对位置信息</strong>和<strong>绝对位置信息</strong>。具体来说，直接将<code>positional embeddings</code>和<code>input embeddings</code>相加，维度也保持一致。</p>
+<script type="math/tex; mode=display">PE_{(pos, 2i)}=sin(pos / 10000^{2i / d_{model}}) \\
+PE_{(pos, 2i+1)}=cos(pos / 10000^{2i / d_{model}})</script><p>其中$pos$是位置，$i$是维度。</p>
+<p>代码实现：<br><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> troch</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PositionalEncoding</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model, dropout, max_len=<span class="number">50000</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(PositionalEncoding, self).__init__()</span><br><span class="line">        self.dropout = nn.Dropout(p=dropout)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># compute the positional encodings</span></span><br><span class="line">        pe = torch.zeros(max_len, d_model)</span><br><span class="line">        position = torch.arange(<span class="number">0</span>, max_len).unsqueeze(<span class="number">1</span>)</span><br><span class="line">        div_term = torch.exp(</span><br><span class="line">            torch.arange(<span class="number">0</span>, d_model, <span class="number">2</span>) * -(math.log(<span class="number">10000.0</span>) / d_model)</span><br><span class="line">        )</span><br><span class="line">        pe[:, <span class="number">0</span>::<span class="number">2</span>] = torch.sin(position * div_term)</span><br><span class="line">        pe[:, <span class="number">1</span>::<span class="number">2</span>] = torch.cos(position * div_term)</span><br><span class="line">        pe = pe.unsqueeze(<span class="number">0</span>)</span><br><span class="line">        self.register_buffer(<span class="string">&quot;pe&quot;</span>, pe)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = x + self.pe[:, : x.size(<span class="number">1</span>)].requires_grad_(<span class="literal">False</span>)</span><br><span class="line">        <span class="keyword">return</span> self.dropout(x)</span><br></pre></td></tr></table></figure></p>
+<p><strong>关于Positional Embeddings的选择</strong></p>
+<p>论文作者也使用了可学习的<code>positional embeddings</code>，效果和余弦版本差不多。不过作者最终还是选择了余弦版本的<code>positional embeddings</code>，对此，作者的解释是，这可能允许模型外推到更长的序列（相比于训练过程）。</p>
+<h2 id="训练过程"><a href="#训练过程" class="headerlink" title="训练过程"></a>训练过程</h2><p><code>Attention Is All You Need</code>这篇文章本身是为了解决<strong>机器翻译</strong>任务提出的，因此也是按照机器翻译来<strong>从头开始训练</strong>的，不存在预训练。</p>
+<p>后续的BERT，GPT等预训练语言模型则是采用了Transformer架构，在大量的无标注语料上进行<strong>自监督学习</strong>，即通过某种策略为无标注语料构造标签，然后再以监督学习的方式进行训练。</p>
+]]></content>
+      <categories>
+        <category>自然语言处理</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>Tokenizer基础篇</title>
+    <url>/2024/06/01/Tokenizer%E5%9F%BA%E7%A1%80%E7%AF%87/</url>
+    <content><![CDATA[<p>对于英语这种语言，虽然单词之间已经有了空格分隔符，但是如果只是用空格进行切分，会导致<strong>数据稀疏</strong>问题。英语的单词往往具有复杂的词形变换，传统的处理方法是根据语言学规则，引入<strong>词形还原</strong>（Lemmatization）或者<strong>词干提取</strong>（Stemming），提取出单词的词根，从而在一定程度上缓降数据稀疏问题。但是这种方法需要人工编写大量的规则，同时不易扩展到新领域，因此现在流行<strong>基于统计的</strong>无监督子词（Subword）切分。子词切分方法可以避免OOV（Out Of Vocabulary）问题。</p>
+<p>子词切分算法基于这样一个原则：不应该将<strong>常用词</strong>拆分为更小的子词，应该将<strong>稀有词</strong>分解为有意义的子词。</p>
+<p>子词切分技术分为以下几种：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>分词方法</th>
+<th>典型模型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BPE</td>
+<td>GPT-1, GPT-2, GPT-3, BART, RoBERTa, LLaMA</td>
+</tr>
+<tr>
+<td>WordPiece</td>
+<td>BERT, DistilBERT, MobileBERT</td>
+</tr>
+<tr>
+<td>UniLM</td>
+<td>ALBERT, mBART, T5, XLNet</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Tokenizer和模型一样，也包括训练和推理两个环节，从语料中训练得到一个分词器模型，推理阶段则给定一个句子，基于分词模型将该句子切分成token序列。</p>
+<p>Tokenizer的训练和Model的训练是分离的，同时Tokenizer的性能和Model的能力并不挂钩。Tokenizer负责将文本转成数字，它起到一个<strong>识字</strong>的作用；Model则将输入的One-hot向量转成Dense Vector，它起到一个<strong>理解</strong>的作用。</p>
+<p>当然，我们一般讨论的LLM（Large Language Model，大型语言模型）是包括Tokenizer和Model在内的，LLM的实际表现和两者密切相关。就比如有些技术文章，我们认识那些字，但是连在一起就不理解了；有些生僻字不认识，更谈不上理解。因此Tokenizer和Model都是非常重要的。</p>
+<h2 id="BPE"><a href="#BPE" class="headerlink" title="BPE"></a>BPE</h2><p>BPE全称<code>Byte Pair Encoding</code>，目前的LLM大多采用了BPE作为Tokenizer，步骤如下：</p>
+<ol>
+<li><p>准备足够大的语料库</p>
+</li>
+<li><p>将语料中的每个单词拆分为<strong>字符序列</strong>，并在单词结尾添加一个<code>&lt;/w&gt;</code>字符</p>
+</li>
+<li><p>用切分后的<strong>字符</strong>构成初始子词词表</p>
+</li>
+<li><p>在语料库中统计单词内<strong>相邻子词对</strong>的频次</p>
+ <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_stats</span>(<span class="params">ids, counts=<span class="literal">None</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    Given a list of integers, return a dictionary of counts of consecutive pairs</span></span><br><span class="line"><span class="string">    Example: [1, 2, 3, 1, 2] -&gt; &#123;(1, 2): 2, (2, 3): 1, (3, 1): 1&#125;</span></span><br><span class="line"><span class="string">    Optionally allows to update an existing dictionary of counts</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    counts = &#123;&#125; <span class="keyword">if</span> counts <span class="keyword">is</span> <span class="literal">None</span> <span class="keyword">else</span> counts</span><br><span class="line">    <span class="keyword">for</span> pair <span class="keyword">in</span> <span class="built_in">zip</span>(ids, ids[<span class="number">1</span>:]):</span><br><span class="line">        counts[pair] = counts.get(pair, <span class="number">0</span>) + <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> counts</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>合并频次最高的子词对，合并成新的子词，并将新的子词加入到子词词表（还需要删除因为合并而消失的旧子词）</p>
+ <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge</span>(<span class="params">ids, pair, idx</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    In the list of integers (ids), replace all consecutive occurrences</span></span><br><span class="line"><span class="string">    of pair with the new integer token idx</span></span><br><span class="line"><span class="string">    Example: ids=[1, 2, 3, 1, 2], pair=(1, 2), idx=4 -&gt; [4, 3, 4]</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    newids = []</span><br><span class="line">    i = <span class="number">0</span></span><br><span class="line">    <span class="keyword">while</span> i &lt; <span class="built_in">len</span>(ids):</span><br><span class="line">        <span class="comment"># if not at the very last position AND the pair matches, replace it</span></span><br><span class="line">        <span class="keyword">if</span> ids[i] == pair[<span class="number">0</span>] <span class="keyword">and</span> i &lt; <span class="built_in">len</span>(ids) - <span class="number">1</span> <span class="keyword">and</span> ids[i+<span class="number">1</span>] == pair[<span class="number">1</span>]:</span><br><span class="line">            newids.append(idx)</span><br><span class="line">            i += <span class="number">2</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            newids.append(ids[i])</span><br><span class="line">            i += <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> newids</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>重复步骤4和5，直到进行了设定的合并次数或者达到了设定的子词词表大小</p>
+</li>
+</ol>
+<p>每次合并时，子词词汇表可能会发生3种变化：</p>
+<ul>
+<li>+1，这表明合并后的新子词加入了词汇表，同时原来的两个子词仍然保留（两个子词<strong>不是完全同时连续出现</strong>）</li>
+<li>+0，这表明合并后的新子词加入了词汇表，同时原来的两个子词一个保留，另一个被去除（一个子词完全随着另一个子词的出现而紧跟着出现）</li>
+<li>-1，这表明合并后的新子词加入了词汇表，同时原来的两个子词都被去除（两个子词<strong>同时连续出现</strong>）</li>
+</ul>
+<p>一般来说，随着合并次数的增加，词表大小会先增加后减小。</p>
+<p>此外，GPT-2在实现BPE Tokenizer的时候，并不是直接对原始字符串进行处理，而是会强制执行一些规则，以确保文本的某些部分永远不会被合并。简单来说，它会先根据正则表达式对句子进行分词，然后对分词后的序列依次进行处理，最后再将处理结果拼接。其它的LLM Tokenizer也在BPE的基础上做出了一些改进。</p>
+<h2 id="WordPiece"><a href="#WordPiece" class="headerlink" title="WordPiece"></a>WordPiece</h2><p>WordPiece和BPE有点类似，只不过WordPiece是<strong>基于概率</strong>生成新的subword而不是最高频的子词对合并得到新子词。</p>
+<p>WordPiece的步骤如下：</p>
+<ol>
+<li><p>准备足够大的语料库</p>
+</li>
+<li><p>将语料中的每个单词拆分为<strong>字符序列</strong>，字符构成初始子词词表</p>
+</li>
+<li><p>基于上一步得到的数据<strong>训练语言模型</strong></p>
+</li>
+<li><p>从所有可能的子词单元中，选择能最大程度得<strong>增加语言模型概率</strong>的相邻子词作为新的子词加入词表</p>
+</li>
+<li><p>重复第4步直到子词词表达到一定数量或概率增量低于某一阈值</p>
+</li>
+</ol>
+<p>何为增加语言模型概率？<br>假设句子$S=(t_1,…,t_n)$由$n$个子词组成，$t_i$表示第$i$个子词。如果各子词之间是独立存在的，则句子$S$的语言模型似然值为：</p>
+<script type="math/tex; mode=display">logP(S)=\sum_{i=1}^{n}logP(t_i)</script><p>假设把相邻位置的子词$x$和子词$y$进行合并，合并之后产生新的子词$z$，此时句子$S$的似然值变化是：</p>
+<script type="math/tex; mode=display">logP(t_z)-(logP(t_x)+logP(t_y))=log\frac{P(t_z)}{P(t_x)P(t_y)}</script><p>似然值的变化就是<strong>两个子词之间的互信息</strong>。</p>
+<p>总之，WordPiece每次选择合并的两个子词，它们具有最大的互信息，即两个子词在语言模型上具有较强的关联性，它们经常在语料中以相邻的方式同时出现。</p>
+<h2 id="UniLM"><a href="#UniLM" class="headerlink" title="UniLM"></a>UniLM</h2><p>UniLM全称是<code>Unigram Language Model</code>，和WordPiece一样，UniLM也利用语言模型来建立子词词表。该算法考虑了句子的<strong>不同分词可能</strong>，因而能够输出带概率的子词。</p>
+<p>不过BPE和WordPiece算法的词表都是一点点增加，由小到大，而UniLM则先初始化一个非常大的词表，然后根据标准不断丢弃，直到词表大小满足限定条件。</p>
+<p>对于句子$S$，如果$(t_1,…,t_n)$是句子的一种分词结果，那么<strong>当前分词结果下</strong>句子$S$的似然值可以表示为：</p>
+<script type="math/tex; mode=display">P(S)=\prod_{i=1}^{n}P(t_i)</script><p>挑选似然值最大的分词结果作为最终分词结果，那么优化目标可以表示为：</p>
+<script type="math/tex; mode=display">argmax_{t\in U(t)}P(t)</script><p>其中$U(t)$包含了句子的所有分词结果。在实际应用中，词表大小有几万，直接罗列所有可能的分词组合不具有操作性，可以通过维特比算法解决。此处不展开。</p>
+<p>那么如何求解每个子词的概率$P(t_i)$呢？UniLM通过EM算法来估计。假设当前语料是$D$，那么第$M$步最大化的对象如下：</p>
+<script type="math/tex; mode=display">L=\sum_{s=1}^{|D|}log(\sum_{t\in U(t)}P(t))</script><p>UniLM算法采用不断迭代的方法构造词表并求解分词概率，该算法的步骤如下：</p>
+<ol>
+<li><p>建立一个足够大的词表，可以通过BPE得到该初始词表</p>
+</li>
+<li><p>针对当前词表，用EM算法求解每个子词在语料上的概率</p>
+</li>
+<li><p>针对每个子词，计算当该子词被从词表中移除时，总损失降低了多少，并记住该子词对应的损失</p>
+</li>
+<li><p>将子词按照损失大小排序，丢弃一定比例损失最小的子词，保留下来的子词生成新的词表。为避免OOV问题，单字符不能被丢弃。</p>
+</li>
+<li><p>重复步骤2到4，直到词表大小减少到设定范围</p>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>自然语言处理</category>
+      </categories>
+  </entry>
+</search>
