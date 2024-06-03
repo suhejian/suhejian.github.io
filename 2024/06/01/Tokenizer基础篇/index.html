@@ -56,7 +56,7 @@
 <meta property="og:description" content="简要介绍一下主流的三种Tokenizer，包括Byte Pair Encoding，WordPiece和Unigram Language Model。其中Byte Pair Encoding是很多LLM Tokenizer的基础，需要重点掌握。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2024-06-01T14:21:19.000Z">
-<meta property="article:modified_time" content="2024-06-01T14:46:20.780Z">
+<meta property="article:modified_time" content="2024-06-03T14:47:55.215Z">
 <meta property="article:author" content="suhejian">
 <meta name="twitter:card" content="summary">
 
@@ -143,12 +143,12 @@
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">1</span></a>
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">2</span></a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">2</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">5</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -224,10 +224,16 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2024-06-01 22:21:19 / 修改时间：22:46:20" itemprop="dateCreated datePublished" datetime="2024-06-01T22:21:19+08:00">2024-06-01</time>
+              <time title="创建时间：2024-06-01 22:21:19" itemprop="dateCreated datePublished" datetime="2024-06-01T22:21:19+08:00">2024-06-01</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-06-03 22:47:55" itemprop="dateModified" datetime="2024-06-03T22:47:55+08:00">2024-06-03</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="fa fa-folder-o"></i>
@@ -279,21 +285,22 @@
 </tbody>
 </table>
 </div>
-<p>Tokenizer和模型一样，也包括训练和推理两个环节，从语料中训练得到一个分词器模型，推理阶段则给定一个句子，基于分词模型将该句子切分成token序列。</p>
+<p>Tokenizer和模型一样，也包括训练和推理两个环节，从语料中训练得到一个分词器模型，推理阶段则给定一个句子，基于分词模型将该句子切分成子词序列。通常采用<code>token</code>代指子词<code>subword</code>。</p>
 <p>Tokenizer的训练和Model的训练是分离的，同时Tokenizer的性能和Model的能力并不挂钩。Tokenizer负责将文本转成数字，它起到一个<strong>识字</strong>的作用；Model则将输入的One-hot向量转成Dense Vector，它起到一个<strong>理解</strong>的作用。</p>
 <p>当然，我们一般讨论的LLM（Large Language Model，大型语言模型）是包括Tokenizer和Model在内的，LLM的实际表现和两者密切相关。就比如有些技术文章，我们认识那些字，但是连在一起就不理解了；有些生僻字不认识，更谈不上理解。因此Tokenizer和Model都是非常重要的。</p>
-<h2 id="BPE"><a href="#BPE" class="headerlink" title="BPE"></a>BPE</h2><p>BPE全称<code>Byte Pair Encoding</code>，目前的LLM大多采用了BPE作为Tokenizer，步骤如下：</p>
+<h2 id="BPE"><a href="#BPE" class="headerlink" title="BPE"></a>BPE</h2><p>BPE全称<code>Byte Pair Encoding</code>，目前的LLM大多采用了BPE作为Tokenizer，它的核心思想是：从一个基础小词表开始，通过不断合并<strong>最高频</strong>的<strong>连续token对</strong>来产生新的token。</p>
+<p>BPE的步骤如下：</p>
 <ol>
 <li><p>准备足够大的语料库</p>
 </li>
-<li><p>将语料中的每个单词拆分为<strong>字符序列</strong>，并在单词结尾添加一个<code>&lt;/w&gt;</code>字符</p>
+<li><p>预分词，以空格为单位得到语料中的单词。每个单词拆分为<strong>字符序列</strong>，并在单词结尾添加一个<code>&lt;/w&gt;</code>字符</p>
 </li>
-<li><p>用切分后的<strong>字符</strong>构成初始子词词表</p>
+<li><p>用切分后的<strong>字符</strong>构成初始词表</p>
 </li>
-<li><p>在语料库中统计单词内<strong>相邻子词对</strong>的频次</p>
+<li><p>在语料库中统计单词内<strong>相邻token对</strong>的频次</p>
  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_stats</span>(<span class="params">ids, counts=<span class="literal">None</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    Given a list of integers, return a dictionary of counts of consecutive pairs</span></span><br><span class="line"><span class="string">    Example: [1, 2, 3, 1, 2] -&gt; &#123;(1, 2): 2, (2, 3): 1, (3, 1): 1&#125;</span></span><br><span class="line"><span class="string">    Optionally allows to update an existing dictionary of counts</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    counts = &#123;&#125; <span class="keyword">if</span> counts <span class="keyword">is</span> <span class="literal">None</span> <span class="keyword">else</span> counts</span><br><span class="line">    <span class="keyword">for</span> pair <span class="keyword">in</span> <span class="built_in">zip</span>(ids, ids[<span class="number">1</span>:]):</span><br><span class="line">        counts[pair] = counts.get(pair, <span class="number">0</span>) + <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> counts</span><br></pre></td></tr></table></figure>
 </li>
-<li><p>合并频次最高的子词对，合并成新的子词，并将新的子词加入到子词词表（还需要删除因为合并而消失的旧子词）</p>
+<li><p>合并频次最高的token对，合并成新的token，并将新的token加入到词表中（还需要删除因为合并而消失的旧token）</p>
  <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge</span>(<span class="params">ids, pair, idx</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    In the list of integers (ids), replace all consecutive occurrences</span></span><br><span class="line"><span class="string">    of pair with the new integer token idx</span></span><br><span class="line"><span class="string">    Example: ids=[1, 2, 3, 1, 2], pair=(1, 2), idx=4 -&gt; [4, 3, 4]</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    newids = []</span><br><span class="line">    i = <span class="number">0</span></span><br><span class="line">    <span class="keyword">while</span> i &lt; <span class="built_in">len</span>(ids):</span><br><span class="line">        <span class="comment"># if not at the very last position AND the pair matches, replace it</span></span><br><span class="line">        <span class="keyword">if</span> ids[i] == pair[<span class="number">0</span>] <span class="keyword">and</span> i &lt; <span class="built_in">len</span>(ids) - <span class="number">1</span> <span class="keyword">and</span> ids[i+<span class="number">1</span>] == pair[<span class="number">1</span>]:</span><br><span class="line">            newids.append(idx)</span><br><span class="line">            i += <span class="number">2</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            newids.append(ids[i])</span><br><span class="line">            i += <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> newids</span><br></pre></td></tr></table></figure>
 </li>
 <li><p>重复步骤4和5，直到进行了设定的合并次数或者达到了设定的子词词表大小</p>
@@ -307,14 +314,25 @@
 </ul>
 <p>一般来说，随着合并次数的增加，词表大小会先增加后减小。</p>
 <p>此外，GPT-2在实现BPE Tokenizer的时候，并不是直接对原始字符串进行处理，而是会强制执行一些规则，以确保文本的某些部分永远不会被合并。简单来说，它会先根据正则表达式对句子进行分词，然后对分词后的序列依次进行处理，最后再将处理结果拼接。其它的LLM Tokenizer也在BPE的基础上做出了一些改进。</p>
-<h2 id="WordPiece"><a href="#WordPiece" class="headerlink" title="WordPiece"></a>WordPiece</h2><p>WordPiece和BPE有点类似，只不过WordPiece是<strong>基于概率</strong>生成新的subword而不是最高频的子词对合并得到新子词。</p>
+<hr>
+<p>BPE的优缺点：</p>
+<p>优点：</p>
+<ul>
+<li>编码句子所需要的token数量和词表大小以及子词粒度有关，所以BPE可以有效平衡词汇表大小和编码步数</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>基于贪婪和确定的符号替换，不能提供带概率的多个分词结果（相对于UniLM而言）</li>
+<li>同一个句子可能会有不同的subword序列，从而产生不同的id序列表示，这种歧义在解码阶段可能无法解决</li>
+</ul>
+<h2 id="WordPiece"><a href="#WordPiece" class="headerlink" title="WordPiece"></a>WordPiece</h2><p>WordPiece和BPE有点类似，只不过WordPiece是<strong>基于概率</strong>生成新的subword而不是最高频的token对合并得到新子词。它的核心思想是：从一个基础小词表出发，通过不断合并<strong>互信息最大</strong>的连续token来产生新的token。</p>
 <p>WordPiece的步骤如下：</p>
 <ol>
 <li><p>准备足够大的语料库</p>
 </li>
 <li><p>将语料中的每个单词拆分为<strong>字符序列</strong>，字符构成初始子词词表</p>
 </li>
-<li><p>基于上一步得到的数据<strong>训练语言模型</strong></p>
+<li><p>基于上一步得到的数据<strong>训练语言模型</strong>，可以是Unigram语言模型，通过极大似然进行估计即可</p>
 </li>
 <li><p>从所有可能的子词单元中，选择能最大程度得<strong>增加语言模型概率</strong>的相邻子词作为新的子词加入词表</p>
 </li>
@@ -325,15 +343,28 @@
 <script type="math/tex; mode=display">logP(S)=\sum_{i=1}^{n}logP(t_i)</script><p>假设把相邻位置的子词$x$和子词$y$进行合并，合并之后产生新的子词$z$，此时句子$S$的似然值变化是：</p>
 <script type="math/tex; mode=display">logP(t_z)-(logP(t_x)+logP(t_y))=log\frac{P(t_z)}{P(t_x)P(t_y)}</script><p>似然值的变化就是<strong>两个子词之间的互信息</strong>。</p>
 <p>总之，WordPiece每次选择合并的两个子词，它们具有最大的互信息，即两个子词在语言模型上具有较强的关联性，它们经常在语料中以相邻的方式同时出现。</p>
+<hr>
+<p>WordPiece的优缺点：</p>
+<p>优点：</p>
+<ul>
+<li>可以较好地平衡词表大小和OOV问题</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>可能会产生一些不太合理的子词或者说错误的切分</li>
+<li>对拼写错误非常敏感</li>
+<li>对前缀的支持不够好</li>
+</ul>
 <h2 id="UniLM"><a href="#UniLM" class="headerlink" title="UniLM"></a>UniLM</h2><p>UniLM全称是<code>Unigram Language Model</code>，和WordPiece一样，UniLM也利用语言模型来建立子词词表。该算法考虑了句子的<strong>不同分词可能</strong>，因而能够输出带概率的子词。</p>
 <p>不过BPE和WordPiece算法的词表都是一点点增加，由小到大，而UniLM则先初始化一个非常大的词表，然后根据标准不断丢弃，直到词表大小满足限定条件。</p>
+<p>UniLM核心思想是：初始化一个大词表，然后通过Unigram Language Model计算删除不同subword造成的损失，以此代表subword的重要性，保留loss较大或者说重要性较高的subword。</p>
 <p>对于句子$S$，如果$(t_1,…,t_n)$是句子的一种分词结果，那么<strong>当前分词结果下</strong>句子$S$的似然值可以表示为：</p>
 <script type="math/tex; mode=display">P(S)=\prod_{i=1}^{n}P(t_i)</script><p>挑选似然值最大的分词结果作为最终分词结果，那么优化目标可以表示为：</p>
 <script type="math/tex; mode=display">argmax_{t\in U(t)}P(t)</script><p>其中$U(t)$包含了句子的所有分词结果。在实际应用中，词表大小有几万，直接罗列所有可能的分词组合不具有操作性，可以通过维特比算法解决。此处不展开。</p>
 <p>那么如何求解每个子词的概率$P(t_i)$呢？UniLM通过EM算法来估计。假设当前语料是$D$，那么第$M$步最大化的对象如下：</p>
 <script type="math/tex; mode=display">L=\sum_{s=1}^{|D|}log(\sum_{t\in U(t)}P(t))</script><p>UniLM算法采用不断迭代的方法构造词表并求解分词概率，该算法的步骤如下：</p>
 <ol>
-<li><p>建立一个足够大的词表，可以通过BPE得到该初始词表</p>
+<li><p>初始化一个很大的基础词表，可以通过BPE得到该初始词表</p>
 </li>
 <li><p>针对当前词表，用EM算法求解每个子词在语料上的概率</p>
 </li>
@@ -343,6 +374,63 @@
 </li>
 <li><p>重复步骤2到4，直到词表大小减少到设定范围</p>
 </li>
+</ol>
+<p>UniLM会倾向于保留那些以较高频率出现在很多句子的分词结果中的子词，因为这些子词如果被删除，损失会很大。</p>
+<hr>
+<p>UniLM的优缺点：</p>
+<p>优点：</p>
+<ul>
+<li>使用的训练算法可以利用所有可能的分词结果，这是通过data sampling算法实现</li>
+<li>提出基于语言模型的分词算法，这种语言模型可以给多种分词结果赋予概率，从而学习到其中的噪声</li>
+<li>使用时可以给出带概率的多个分词结果</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>效果和初始词表息息相关，初始的大词表要足够好，比如可以通过BPE来初始化</li>
+<li>略显复杂</li>
+</ul>
+<h2 id="三种subword算法比较"><a href="#三种subword算法比较" class="headerlink" title="三种subword算法比较"></a>三种subword算法比较</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>BPE</th>
+<th>WordPiece</th>
+<th>UniLM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>词表大小</td>
+<td>小词表到大词表</td>
+<td>小词表到大词表</td>
+<td>大词表到小词表</td>
+</tr>
+<tr>
+<td>词表筛选</td>
+<td>合并最高频的子词对</td>
+<td>合并互信息最大的子词对</td>
+<td>丢弃一定比例损失最小的子词</td>
+</tr>
+<tr>
+<td>学习</td>
+<td>合并规则和词汇表</td>
+<td>词汇表</td>
+<td>带有概率的词汇表</td>
+</tr>
+<tr>
+<td>编码</td>
+<td>将一个单词分割成字符序列，然后利用训练得到的合并规则合并这些序列</td>
+<td>从词汇表中找开始位置能匹配到的最长子词，然后依次匹配单词的剩余部分</td>
+<td>利用训练得到的概率分数，找到最有可能的划分子词序列</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>【参考资料】</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://huggingface.co/learn/nlp-course/chapter6/4?fw=pt">HuggingFace-NLP-Courses-Tokenizer</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/626080766">大模型基础组件之分词器</a></li>
 </ol>
 
     </div>
@@ -422,7 +510,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#BPE"><span class="nav-text">BPE</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#WordPiece"><span class="nav-text">WordPiece</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UniLM"><span class="nav-text">UniLM</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#BPE"><span class="nav-text">BPE</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#WordPiece"><span class="nav-text">WordPiece</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UniLM"><span class="nav-text">UniLM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E7%A7%8Dsubword%E7%AE%97%E6%B3%95%E6%AF%94%E8%BE%83"><span class="nav-text">三种subword算法比较</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -436,14 +524,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-count">5</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-count">2</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>

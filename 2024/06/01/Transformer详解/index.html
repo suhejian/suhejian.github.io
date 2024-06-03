@@ -57,7 +57,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://suhejian.github.io/2024/06/01/Transformer%E8%AF%A6%E8%A7%A3/transformer-architecture.png">
 <meta property="article:published_time" content="2024-06-01T14:32:28.000Z">
-<meta property="article:modified_time" content="2024-06-01T14:56:19.703Z">
+<meta property="article:modified_time" content="2024-06-03T13:08:31.500Z">
 <meta property="article:author" content="suhejian">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://suhejian.github.io/2024/06/01/Transformer%E8%AF%A6%E8%A7%A3/transformer-architecture.png">
@@ -145,12 +145,12 @@
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">1</span></a>
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">2</span></a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">2</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">5</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -226,10 +226,16 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2024-06-01 22:32:28 / 修改时间：22:56:19" itemprop="dateCreated datePublished" datetime="2024-06-01T22:32:28+08:00">2024-06-01</time>
+              <time title="创建时间：2024-06-01 22:32:28" itemprop="dateCreated datePublished" datetime="2024-06-01T22:32:28+08:00">2024-06-01</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-06-03 21:08:31" itemprop="dateModified" datetime="2024-06-03T21:08:31+08:00">2024-06-03</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="fa fa-folder-o"></i>
@@ -303,7 +309,8 @@ head_{i}=Attention(QW_i^Q, KW_i^K, VW_i^V)</script><p>代码实现：<br><figure
 <h3 id="位置编码"><a href="#位置编码" class="headerlink" title="位置编码"></a>位置编码</h3><p>由于自注意力机制对待每个位置都是一样的，为了利用序列信息，模型引入了<code>Positional Embedding</code>，从而注入<strong>相对位置信息</strong>和<strong>绝对位置信息</strong>。具体来说，直接将<code>positional embeddings</code>和<code>input embeddings</code>相加，维度也保持一致。</p>
 <script type="math/tex; mode=display">PE_{(pos, 2i)}=sin(pos / 10000^{2i / d_{model}}) \\
 PE_{(pos, 2i+1)}=cos(pos / 10000^{2i / d_{model}})</script><p>其中$pos$是位置，$i$是维度。</p>
-<p>代码实现：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> troch</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PositionalEncoding</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model, dropout, max_len=<span class="number">50000</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(PositionalEncoding, self).__init__()</span><br><span class="line">        self.dropout = nn.Dropout(p=dropout)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># compute the positional encodings</span></span><br><span class="line">        pe = torch.zeros(max_len, d_model)</span><br><span class="line">        position = torch.arange(<span class="number">0</span>, max_len).unsqueeze(<span class="number">1</span>)</span><br><span class="line">        div_term = torch.exp(</span><br><span class="line">            torch.arange(<span class="number">0</span>, d_model, <span class="number">2</span>) * -(math.log(<span class="number">10000.0</span>) / d_model)</span><br><span class="line">        )</span><br><span class="line">        pe[:, <span class="number">0</span>::<span class="number">2</span>] = torch.sin(position * div_term)</span><br><span class="line">        pe[:, <span class="number">1</span>::<span class="number">2</span>] = torch.cos(position * div_term)</span><br><span class="line">        pe = pe.unsqueeze(<span class="number">0</span>)</span><br><span class="line">        self.register_buffer(<span class="string">&quot;pe&quot;</span>, pe)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = x + self.pe[:, : x.size(<span class="number">1</span>)].requires_grad_(<span class="literal">False</span>)</span><br><span class="line">        <span class="keyword">return</span> self.dropout(x)</span><br></pre></td></tr></table></figure></p>
+<p>此外，$1/10000^{2i / d_{model}}$可以改写为:</p>
+<script type="math/tex; mode=display">e^{log(10000^{-2i/d_{model}})}=e^{-2i/d_{model}*log10000}=e^{2i*(-log10000/d_{model})}</script><p>代码实现：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> troch</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PositionalEncoding</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model, dropout, max_len=<span class="number">50000</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(PositionalEncoding, self).__init__()</span><br><span class="line">        self.dropout = nn.Dropout(p=dropout)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># compute the positional encodings</span></span><br><span class="line">        pe = torch.zeros(max_len, d_model)</span><br><span class="line">        position = torch.arange(<span class="number">0</span>, max_len).unsqueeze(<span class="number">1</span>)</span><br><span class="line">        div_term = torch.exp(</span><br><span class="line">            torch.arange(<span class="number">0</span>, d_model, <span class="number">2</span>) * -(math.log(<span class="number">10000.0</span>) / d_model)</span><br><span class="line">        )</span><br><span class="line">        pe[:, <span class="number">0</span>::<span class="number">2</span>] = torch.sin(position * div_term)</span><br><span class="line">        pe[:, <span class="number">1</span>::<span class="number">2</span>] = torch.cos(position * div_term)</span><br><span class="line">        pe = pe.unsqueeze(<span class="number">0</span>)</span><br><span class="line">        self.register_buffer(<span class="string">&quot;pe&quot;</span>, pe)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = x + self.pe[:, : x.size(<span class="number">1</span>)].requires_grad_(<span class="literal">False</span>)</span><br><span class="line">        <span class="keyword">return</span> self.dropout(x)</span><br></pre></td></tr></table></figure></p>
 <p><strong>关于Positional Embeddings的选择</strong></p>
 <p>论文作者也使用了可学习的<code>positional embeddings</code>，效果和余弦版本差不多。不过作者最终还是选择了余弦版本的<code>positional embeddings</code>，对此，作者的解释是，这可能允许模型外推到更长的序列（相比于训练过程）。</p>
 <h2 id="训练过程"><a href="#训练过程" class="headerlink" title="训练过程"></a>训练过程</h2><p><code>Attention Is All You Need</code>这篇文章本身是为了解决<strong>机器翻译</strong>任务提出的，因此也是按照机器翻译来<strong>从头开始训练</strong>的，不存在预训练。</p>
@@ -326,7 +333,10 @@ PE_{(pos, 2i+1)}=cos(pos / 10000^{2i / d_{model}})</script><p>其中$pos$是位�
     <a href="/2024/06/01/Tokenizer%E5%9F%BA%E7%A1%80%E7%AF%87/" rel="prev" title="Tokenizer基础篇">
       <i class="fa fa-chevron-left"></i> Tokenizer基础篇
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2024/06/03/%E5%B8%B8%E7%94%A8%E4%BC%98%E5%8C%96%E5%99%A8/" rel="next" title="常用优化器">
+      常用优化器 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -400,14 +410,14 @@ PE_{(pos, 2i+1)}=cos(pos / 10000^{2i / d_{model}})</script><p>其中$pos$是位�
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-count">5</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-count">2</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
   </nav>

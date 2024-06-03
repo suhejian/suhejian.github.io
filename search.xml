@@ -52,7 +52,8 @@ head_{i}=Attention(QW_i^Q, KW_i^K, VW_i^V)</script><p>代码实现：<br><figure
 <h3 id="位置编码"><a href="#位置编码" class="headerlink" title="位置编码"></a>位置编码</h3><p>由于自注意力机制对待每个位置都是一样的，为了利用序列信息，模型引入了<code>Positional Embedding</code>，从而注入<strong>相对位置信息</strong>和<strong>绝对位置信息</strong>。具体来说，直接将<code>positional embeddings</code>和<code>input embeddings</code>相加，维度也保持一致。</p>
 <script type="math/tex; mode=display">PE_{(pos, 2i)}=sin(pos / 10000^{2i / d_{model}}) \\
 PE_{(pos, 2i+1)}=cos(pos / 10000^{2i / d_{model}})</script><p>其中$pos$是位置，$i$是维度。</p>
-<p>代码实现：<br><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> troch</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PositionalEncoding</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model, dropout, max_len=<span class="number">50000</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(PositionalEncoding, self).__init__()</span><br><span class="line">        self.dropout = nn.Dropout(p=dropout)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># compute the positional encodings</span></span><br><span class="line">        pe = torch.zeros(max_len, d_model)</span><br><span class="line">        position = torch.arange(<span class="number">0</span>, max_len).unsqueeze(<span class="number">1</span>)</span><br><span class="line">        div_term = torch.exp(</span><br><span class="line">            torch.arange(<span class="number">0</span>, d_model, <span class="number">2</span>) * -(math.log(<span class="number">10000.0</span>) / d_model)</span><br><span class="line">        )</span><br><span class="line">        pe[:, <span class="number">0</span>::<span class="number">2</span>] = torch.sin(position * div_term)</span><br><span class="line">        pe[:, <span class="number">1</span>::<span class="number">2</span>] = torch.cos(position * div_term)</span><br><span class="line">        pe = pe.unsqueeze(<span class="number">0</span>)</span><br><span class="line">        self.register_buffer(<span class="string">&quot;pe&quot;</span>, pe)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = x + self.pe[:, : x.size(<span class="number">1</span>)].requires_grad_(<span class="literal">False</span>)</span><br><span class="line">        <span class="keyword">return</span> self.dropout(x)</span><br></pre></td></tr></table></figure></p>
+<p>此外，$1/10000^{2i / d_{model}}$可以改写为:</p>
+<script type="math/tex; mode=display">e^{log(10000^{-2i/d_{model}})}=e^{-2i/d_{model}*log10000}=e^{2i*(-log10000/d_{model})}</script><p>代码实现：<br><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> torch.nn <span class="keyword">as</span> nn</span><br><span class="line"><span class="keyword">import</span> troch</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PositionalEncoding</span>(nn.Module):</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, d_model, dropout, max_len=<span class="number">50000</span></span>):</span><br><span class="line">        <span class="built_in">super</span>(PositionalEncoding, self).__init__()</span><br><span class="line">        self.dropout = nn.Dropout(p=dropout)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># compute the positional encodings</span></span><br><span class="line">        pe = torch.zeros(max_len, d_model)</span><br><span class="line">        position = torch.arange(<span class="number">0</span>, max_len).unsqueeze(<span class="number">1</span>)</span><br><span class="line">        div_term = torch.exp(</span><br><span class="line">            torch.arange(<span class="number">0</span>, d_model, <span class="number">2</span>) * -(math.log(<span class="number">10000.0</span>) / d_model)</span><br><span class="line">        )</span><br><span class="line">        pe[:, <span class="number">0</span>::<span class="number">2</span>] = torch.sin(position * div_term)</span><br><span class="line">        pe[:, <span class="number">1</span>::<span class="number">2</span>] = torch.cos(position * div_term)</span><br><span class="line">        pe = pe.unsqueeze(<span class="number">0</span>)</span><br><span class="line">        self.register_buffer(<span class="string">&quot;pe&quot;</span>, pe)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">forward</span>(<span class="params">self, x</span>):</span><br><span class="line">        x = x + self.pe[:, : x.size(<span class="number">1</span>)].requires_grad_(<span class="literal">False</span>)</span><br><span class="line">        <span class="keyword">return</span> self.dropout(x)</span><br></pre></td></tr></table></figure></p>
 <p><strong>关于Positional Embeddings的选择</strong></p>
 <p>论文作者也使用了可学习的<code>positional embeddings</code>，效果和余弦版本差不多。不过作者最终还是选择了余弦版本的<code>positional embeddings</code>，对此，作者的解释是，这可能允许模型外推到更长的序列（相比于训练过程）。</p>
 <h2 id="训练过程"><a href="#训练过程" class="headerlink" title="训练过程"></a>训练过程</h2><p><code>Attention Is All You Need</code>这篇文章本身是为了解决<strong>机器翻译</strong>任务提出的，因此也是按照机器翻译来<strong>从头开始训练</strong>的，不存在预训练。</p>
@@ -92,21 +93,22 @@ PE_{(pos, 2i+1)}=cos(pos / 10000^{2i / d_{model}})</script><p>其中$pos$是位�
 </tbody>
 </table>
 </div>
-<p>Tokenizer和模型一样，也包括训练和推理两个环节，从语料中训练得到一个分词器模型，推理阶段则给定一个句子，基于分词模型将该句子切分成token序列。</p>
+<p>Tokenizer和模型一样，也包括训练和推理两个环节，从语料中训练得到一个分词器模型，推理阶段则给定一个句子，基于分词模型将该句子切分成子词序列。通常采用<code>token</code>代指子词<code>subword</code>。</p>
 <p>Tokenizer的训练和Model的训练是分离的，同时Tokenizer的性能和Model的能力并不挂钩。Tokenizer负责将文本转成数字，它起到一个<strong>识字</strong>的作用；Model则将输入的One-hot向量转成Dense Vector，它起到一个<strong>理解</strong>的作用。</p>
 <p>当然，我们一般讨论的LLM（Large Language Model，大型语言模型）是包括Tokenizer和Model在内的，LLM的实际表现和两者密切相关。就比如有些技术文章，我们认识那些字，但是连在一起就不理解了；有些生僻字不认识，更谈不上理解。因此Tokenizer和Model都是非常重要的。</p>
-<h2 id="BPE"><a href="#BPE" class="headerlink" title="BPE"></a>BPE</h2><p>BPE全称<code>Byte Pair Encoding</code>，目前的LLM大多采用了BPE作为Tokenizer，步骤如下：</p>
+<h2 id="BPE"><a href="#BPE" class="headerlink" title="BPE"></a>BPE</h2><p>BPE全称<code>Byte Pair Encoding</code>，目前的LLM大多采用了BPE作为Tokenizer，它的核心思想是：从一个基础小词表开始，通过不断合并<strong>最高频</strong>的<strong>连续token对</strong>来产生新的token。</p>
+<p>BPE的步骤如下：</p>
 <ol>
 <li><p>准备足够大的语料库</p>
 </li>
-<li><p>将语料中的每个单词拆分为<strong>字符序列</strong>，并在单词结尾添加一个<code>&lt;/w&gt;</code>字符</p>
+<li><p>预分词，以空格为单位得到语料中的单词。每个单词拆分为<strong>字符序列</strong>，并在单词结尾添加一个<code>&lt;/w&gt;</code>字符</p>
 </li>
-<li><p>用切分后的<strong>字符</strong>构成初始子词词表</p>
+<li><p>用切分后的<strong>字符</strong>构成初始词表</p>
 </li>
-<li><p>在语料库中统计单词内<strong>相邻子词对</strong>的频次</p>
+<li><p>在语料库中统计单词内<strong>相邻token对</strong>的频次</p>
  <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">get_stats</span>(<span class="params">ids, counts=<span class="literal">None</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    Given a list of integers, return a dictionary of counts of consecutive pairs</span></span><br><span class="line"><span class="string">    Example: [1, 2, 3, 1, 2] -&gt; &#123;(1, 2): 2, (2, 3): 1, (3, 1): 1&#125;</span></span><br><span class="line"><span class="string">    Optionally allows to update an existing dictionary of counts</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    counts = &#123;&#125; <span class="keyword">if</span> counts <span class="keyword">is</span> <span class="literal">None</span> <span class="keyword">else</span> counts</span><br><span class="line">    <span class="keyword">for</span> pair <span class="keyword">in</span> <span class="built_in">zip</span>(ids, ids[<span class="number">1</span>:]):</span><br><span class="line">        counts[pair] = counts.get(pair, <span class="number">0</span>) + <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> counts</span><br></pre></td></tr></table></figure>
 </li>
-<li><p>合并频次最高的子词对，合并成新的子词，并将新的子词加入到子词词表（还需要删除因为合并而消失的旧子词）</p>
+<li><p>合并频次最高的token对，合并成新的token，并将新的token加入到词表中（还需要删除因为合并而消失的旧token）</p>
  <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">merge</span>(<span class="params">ids, pair, idx</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    In the list of integers (ids), replace all consecutive occurrences</span></span><br><span class="line"><span class="string">    of pair with the new integer token idx</span></span><br><span class="line"><span class="string">    Example: ids=[1, 2, 3, 1, 2], pair=(1, 2), idx=4 -&gt; [4, 3, 4]</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    newids = []</span><br><span class="line">    i = <span class="number">0</span></span><br><span class="line">    <span class="keyword">while</span> i &lt; <span class="built_in">len</span>(ids):</span><br><span class="line">        <span class="comment"># if not at the very last position AND the pair matches, replace it</span></span><br><span class="line">        <span class="keyword">if</span> ids[i] == pair[<span class="number">0</span>] <span class="keyword">and</span> i &lt; <span class="built_in">len</span>(ids) - <span class="number">1</span> <span class="keyword">and</span> ids[i+<span class="number">1</span>] == pair[<span class="number">1</span>]:</span><br><span class="line">            newids.append(idx)</span><br><span class="line">            i += <span class="number">2</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            newids.append(ids[i])</span><br><span class="line">            i += <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> newids</span><br></pre></td></tr></table></figure>
 </li>
 <li><p>重复步骤4和5，直到进行了设定的合并次数或者达到了设定的子词词表大小</p>
@@ -120,14 +122,25 @@ PE_{(pos, 2i+1)}=cos(pos / 10000^{2i / d_{model}})</script><p>其中$pos$是位�
 </ul>
 <p>一般来说，随着合并次数的增加，词表大小会先增加后减小。</p>
 <p>此外，GPT-2在实现BPE Tokenizer的时候，并不是直接对原始字符串进行处理，而是会强制执行一些规则，以确保文本的某些部分永远不会被合并。简单来说，它会先根据正则表达式对句子进行分词，然后对分词后的序列依次进行处理，最后再将处理结果拼接。其它的LLM Tokenizer也在BPE的基础上做出了一些改进。</p>
-<h2 id="WordPiece"><a href="#WordPiece" class="headerlink" title="WordPiece"></a>WordPiece</h2><p>WordPiece和BPE有点类似，只不过WordPiece是<strong>基于概率</strong>生成新的subword而不是最高频的子词对合并得到新子词。</p>
+<hr>
+<p>BPE的优缺点：</p>
+<p>优点：</p>
+<ul>
+<li>编码句子所需要的token数量和词表大小以及子词粒度有关，所以BPE可以有效平衡词汇表大小和编码步数</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>基于贪婪和确定的符号替换，不能提供带概率的多个分词结果（相对于UniLM而言）</li>
+<li>同一个句子可能会有不同的subword序列，从而产生不同的id序列表示，这种歧义在解码阶段可能无法解决</li>
+</ul>
+<h2 id="WordPiece"><a href="#WordPiece" class="headerlink" title="WordPiece"></a>WordPiece</h2><p>WordPiece和BPE有点类似，只不过WordPiece是<strong>基于概率</strong>生成新的subword而不是最高频的token对合并得到新子词。它的核心思想是：从一个基础小词表出发，通过不断合并<strong>互信息最大</strong>的连续token来产生新的token。</p>
 <p>WordPiece的步骤如下：</p>
 <ol>
 <li><p>准备足够大的语料库</p>
 </li>
 <li><p>将语料中的每个单词拆分为<strong>字符序列</strong>，字符构成初始子词词表</p>
 </li>
-<li><p>基于上一步得到的数据<strong>训练语言模型</strong></p>
+<li><p>基于上一步得到的数据<strong>训练语言模型</strong>，可以是Unigram语言模型，通过极大似然进行估计即可</p>
 </li>
 <li><p>从所有可能的子词单元中，选择能最大程度得<strong>增加语言模型概率</strong>的相邻子词作为新的子词加入词表</p>
 </li>
@@ -138,15 +151,28 @@ PE_{(pos, 2i+1)}=cos(pos / 10000^{2i / d_{model}})</script><p>其中$pos$是位�
 <script type="math/tex; mode=display">logP(S)=\sum_{i=1}^{n}logP(t_i)</script><p>假设把相邻位置的子词$x$和子词$y$进行合并，合并之后产生新的子词$z$，此时句子$S$的似然值变化是：</p>
 <script type="math/tex; mode=display">logP(t_z)-(logP(t_x)+logP(t_y))=log\frac{P(t_z)}{P(t_x)P(t_y)}</script><p>似然值的变化就是<strong>两个子词之间的互信息</strong>。</p>
 <p>总之，WordPiece每次选择合并的两个子词，它们具有最大的互信息，即两个子词在语言模型上具有较强的关联性，它们经常在语料中以相邻的方式同时出现。</p>
+<hr>
+<p>WordPiece的优缺点：</p>
+<p>优点：</p>
+<ul>
+<li>可以较好地平衡词表大小和OOV问题</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>可能会产生一些不太合理的子词或者说错误的切分</li>
+<li>对拼写错误非常敏感</li>
+<li>对前缀的支持不够好</li>
+</ul>
 <h2 id="UniLM"><a href="#UniLM" class="headerlink" title="UniLM"></a>UniLM</h2><p>UniLM全称是<code>Unigram Language Model</code>，和WordPiece一样，UniLM也利用语言模型来建立子词词表。该算法考虑了句子的<strong>不同分词可能</strong>，因而能够输出带概率的子词。</p>
 <p>不过BPE和WordPiece算法的词表都是一点点增加，由小到大，而UniLM则先初始化一个非常大的词表，然后根据标准不断丢弃，直到词表大小满足限定条件。</p>
+<p>UniLM核心思想是：初始化一个大词表，然后通过Unigram Language Model计算删除不同subword造成的损失，以此代表subword的重要性，保留loss较大或者说重要性较高的subword。</p>
 <p>对于句子$S$，如果$(t_1,…,t_n)$是句子的一种分词结果，那么<strong>当前分词结果下</strong>句子$S$的似然值可以表示为：</p>
 <script type="math/tex; mode=display">P(S)=\prod_{i=1}^{n}P(t_i)</script><p>挑选似然值最大的分词结果作为最终分词结果，那么优化目标可以表示为：</p>
 <script type="math/tex; mode=display">argmax_{t\in U(t)}P(t)</script><p>其中$U(t)$包含了句子的所有分词结果。在实际应用中，词表大小有几万，直接罗列所有可能的分词组合不具有操作性，可以通过维特比算法解决。此处不展开。</p>
 <p>那么如何求解每个子词的概率$P(t_i)$呢？UniLM通过EM算法来估计。假设当前语料是$D$，那么第$M$步最大化的对象如下：</p>
 <script type="math/tex; mode=display">L=\sum_{s=1}^{|D|}log(\sum_{t\in U(t)}P(t))</script><p>UniLM算法采用不断迭代的方法构造词表并求解分词概率，该算法的步骤如下：</p>
 <ol>
-<li><p>建立一个足够大的词表，可以通过BPE得到该初始词表</p>
+<li><p>初始化一个很大的基础词表，可以通过BPE得到该初始词表</p>
 </li>
 <li><p>针对当前词表，用EM算法求解每个子词在语料上的概率</p>
 </li>
@@ -157,9 +183,427 @@ PE_{(pos, 2i+1)}=cos(pos / 10000^{2i / d_{model}})</script><p>其中$pos$是位�
 <li><p>重复步骤2到4，直到词表大小减少到设定范围</p>
 </li>
 </ol>
+<p>UniLM会倾向于保留那些以较高频率出现在很多句子的分词结果中的子词，因为这些子词如果被删除，损失会很大。</p>
+<hr>
+<p>UniLM的优缺点：</p>
+<p>优点：</p>
+<ul>
+<li>使用的训练算法可以利用所有可能的分词结果，这是通过data sampling算法实现</li>
+<li>提出基于语言模型的分词算法，这种语言模型可以给多种分词结果赋予概率，从而学习到其中的噪声</li>
+<li>使用时可以给出带概率的多个分词结果</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>效果和初始词表息息相关，初始的大词表要足够好，比如可以通过BPE来初始化</li>
+<li>略显复杂</li>
+</ul>
+<h2 id="三种subword算法比较"><a href="#三种subword算法比较" class="headerlink" title="三种subword算法比较"></a>三种subword算法比较</h2><div class="table-container">
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>BPE</th>
+<th>WordPiece</th>
+<th>UniLM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>词表大小</td>
+<td>小词表到大词表</td>
+<td>小词表到大词表</td>
+<td>大词表到小词表</td>
+</tr>
+<tr>
+<td>词表筛选</td>
+<td>合并最高频的子词对</td>
+<td>合并互信息最大的子词对</td>
+<td>丢弃一定比例损失最小的子词</td>
+</tr>
+<tr>
+<td>学习</td>
+<td>合并规则和词汇表</td>
+<td>词汇表</td>
+<td>带有概率的词汇表</td>
+</tr>
+<tr>
+<td>编码</td>
+<td>将一个单词分割成字符序列，然后利用训练得到的合并规则合并这些序列</td>
+<td>从词汇表中找开始位置能匹配到的最长子词，然后依次匹配单词的剩余部分</td>
+<td>利用训练得到的概率分数，找到最有可能的划分子词序列</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>【参考资料】</p>
+<ol>
+<li><a href="https://huggingface.co/learn/nlp-course/chapter6/4?fw=pt">HuggingFace-NLP-Courses-Tokenizer</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/626080766">大模型基础组件之分词器</a></li>
+</ol>
 ]]></content>
       <categories>
         <category>自然语言处理</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>常用优化器</title>
+    <url>/2024/06/03/%E5%B8%B8%E7%94%A8%E4%BC%98%E5%8C%96%E5%99%A8/</url>
+    <content><![CDATA[<p>优化器的作用是在深度学习反向传播的过程中，指引损失函数或者目标函数的各个参数往<strong>正确的方向</strong>更新<strong>合适的大小</strong>，使得更新后的参数让损失函数或目标函数的值不断逼近全局最小。</p>
+<p>在微积分中，对多元函数的的参数$\theta$求偏导数，把求得的各个参数的导数以向量的形式写出来就是<strong>梯度</strong>。梯度是函数变化最快的方向。在求解机器学习算法的模型参数$\theta$时，即无约束问题时，梯度下降是最常采用的方法之一。</p>
+<p>使用梯度下降进行优化，是几乎所有优化器的核心思想，有两个方面是这些优化器最关心的：</p>
+<ul>
+<li>优化方向<br>优化方向决定了前进的方向是否正确，在优化器中反映为梯度或者动量</li>
+<li>步长<br>步长决定了每一步迈多远，在优化器中反映为学习率</li>
+</ul>
+<p>所有的优化器都会关注这两个方面，针对学习率和梯度分别衍生出自适应（Adaptive）学习率方法和动量（Momentum）方法。但是同时也有一些其它问题，如应该在哪里出发、路线错误如何处理等。</p>
+<h2 id="梯度下降"><a href="#梯度下降" class="headerlink" title="梯度下降"></a>梯度下降</h2><p>假设待优化的模型参数是$\theta$，目标函数为$J(\theta)$，学习率为$\eta$，迭代的轮次是$t$，那么损失函数$J(\theta)$关于当前参数$\theta$的梯度是：</p>
+<script type="math/tex; mode=display">
+g_t = \nabla _{\theta}J(\theta)</script><p>梯度下降法参数更新：</p>
+<script type="math/tex; mode=display">
+\theta _{t+1} = \theta _{t} - \eta * \nabla _{\theta}J(\theta)=\theta _t- \eta * g_t</script><p>梯度下降算法就是沿着梯度的方向，不断减小模型参数。不过标准的梯度下降有两个缺点：</p>
+<ul>
+<li>训练速度慢：每输入一个样本都需要更新一次参数，且每次迭代都要遍历所有样本，训练速度及其缓慢</li>
+<li>容易陷入局部最优解：由于是在有限视距内寻找下山方向，容易落入鞍点（梯度为0），使得模型参数不再继续更新</li>
+</ul>
+<p>在真正使用时，主要是经过改进的以下三类方法，区别在于<strong>每次参数更新时计算的样本数量不同</strong>：</p>
+<ul>
+<li>随机梯度下降法（SGD，Stochastic Gradient Descent）</li>
+<li>批量梯度下降法（BGD，Batch Gradient Descent）</li>
+<li>小批量梯度下降法（Mini-batch Gradient Descent）</li>
+</ul>
+<h3 id="SGD"><a href="#SGD" class="headerlink" title="SGD"></a>SGD</h3><p>SGD全称是Stochastic Gradient Descent，随机梯度下降法。</p>
+<p>SGD每次更新参数时，仅仅选取一个样本$(x_i , y_i)$计算其梯度，参数更新公式为：</p>
+<script type="math/tex; mode=display">
+\theta _{t+1} = \theta _{t} - \eta * \nabla _{\theta}J_i(\theta, x_i, y_i)</script><p>这里的样本是从所有样本中随机选取一个，由于每次参数更新只需要计算一个样本的梯度，训练速度很快。即使在样本量很大的情况下，可能只需要其中一部分样本就能迭代到最优解。由于每次迭代并不是都向着整体最优方向，这会导致梯度下降的波动非常大，容易从一个局部最优跳到另一个局部最优。</p>
+<p>该优化器的优点：</p>
+<ul>
+<li>每次迭代只使用一个样本计算梯度，训练速度快，尤其是数据集很大的时候</li>
+<li>虽然包含一定随机性，但是大量的理论和实践工作证明，只要噪声不是特别大，SGD都能很好地收敛</li>
+</ul>
+<p>该优化器的缺点：</p>
+<ul>
+<li>更新频繁，带有随机性，会造成损失函数在收敛过程中严重震荡</li>
+<li>SGD不能单独克服局部最优解的问题</li>
+<li>SGD在随机选择梯度的时候会引入噪声，使得权重更新的方向不一定正确</li>
+</ul>
+<h3 id="BGD"><a href="#BGD" class="headerlink" title="BGD"></a>BGD</h3><p>BGD全称是Batch Gradient Descent，批量梯度下降法。</p>
+<p>BGD不像标准梯度下降一样对每个样本输入都进行参数更新，而是针对<strong>一批</strong>（或者一个子集）输入数据进行参数更新。假设所有的训练样本总数为$n$，样本为$\{ (x_1,y_1),…,(x_n,y_n) \}，模型参数为$\theta$，在对第$i$个样本$(x_i,y_i)$上的损失函数关于参数的梯度为$\nabla _{\theta}J_i(\theta,x_i,y_i)$，则使用BGD更新参数的式子为：</p>
+<script type="math/tex; mode=display">
+\theta _{t+1} = \theta _{t} - \eta * \frac{1}{n} * \sum_{i=1}^{n} \nabla _{\theta _{t}}J_i(\theta _t, x_i, y_i)</script><p>该优化器的优点：</p>
+<ul>
+<li>由于每一步迭代都使用了训练集全部样本，每次下降的方向为总体的平均梯度，因此损失函数收敛过程比较稳定</li>
+<li>对凸函数可以收敛到全局最小值，对于非凸函数可以收敛到局部最小值</li>
+</ul>
+<p>该优化器的缺点：</p>
+<ul>
+<li>每一步更新时需要利用训练集全部样本计算梯度，计算起来比较慢</li>
+</ul>
+<h3 id="MBGD"><a href="#MBGD" class="headerlink" title="MBGD"></a>MBGD</h3><p>MBGD全称是Mini-batch Gradient Descent，小批量梯度下降法是对BGD和SGD的折中。对于含有$n$个训练样本的数据集，每次参数更新，选择一个大小为$m$的mini-batch数据样本计算其梯度$(m &lt; n)$，其参数更新公式如下：</p>
+<script type="math/tex; mode=display">
+\theta _{t+1} = \theta _{t} - \eta * \sum_{i=x}^{i=x+m-1} \nabla _{\theta _{t}}J_i(\theta _t, x_i, y_i)</script><p>小批量梯度下降法既保证了训练的速度，又保证了最后收敛的准确率，目前的SGD默认是小批量梯度下降算法。</p>
+<p>该优化器的优点：</p>
+<ul>
+<li>降低参数更新时的方差，收敛更稳定</li>
+<li>充分利用深度学习库中高度优化的矩阵操作来进行更有效的梯度计算</li>
+</ul>
+<p>该优化器的缺点：</p>
+<ul>
+<li>不能保证很好的收敛性，学习率太小，收敛速度会很慢；学习率太大，损失函数会在极小值处不停震荡</li>
+</ul>
+<h2 id="Momentum"><a href="#Momentum" class="headerlink" title="Momentum"></a>Momentum</h2><blockquote>
+<p>动量优化法引入了物理中的概念。动量$p=m*v$，当一个小球从山顶滚下，速度越来越快，动量越来越大，开始加速梯度下降；当跨越了山谷，滚到对面山坡时，速度减小，动量减小。带动量的小球不仅可以加速梯度，还可以借着积累的动量，冲过小的山坡，以避免落入局部最优点。</p>
+</blockquote>
+<p>假设$m_t$表示$t$时刻的动量，$\gamma$表示动量因子，通常取0.9，在SGD的基础上增加动量，则参数更新公式为：</p>
+<script type="math/tex; mode=display">m_{t+1}=\gamma * m_t + \eta * \nabla _{\theta} J(\theta)</script><p>SGD只使用了当前步的梯度，随机性较大，momentum在SGD的基础上增加动量，将历次迭代的梯度按比例融合，可能更加稳定，更有利于跳出局部最优。</p>
+<script type="math/tex; mode=display">\theta _{t+1}=\theta _{t} - m_{t+1}</script><p>由于动量因子$\gamma$的经验值是0.9，这意味着下降方向主要是此前累积的下降方向，并略微偏向当前时刻的下降方向。在梯度方向改变时，momentum能够降低参数更新速度，从而减少震荡；在梯度方向相同时，momentum可以加速参数更新，从而加速收敛。</p>
+<p>该优化器的优点：</p>
+<ul>
+<li>前后梯度一致时能够加速收敛速度</li>
+<li>前后梯度不一致时能够抑制震荡，越过局部极小值</li>
+</ul>
+<p>该优化器的缺点：</p>
+<ul>
+<li>增加了一个超参数</li>
+</ul>
+<h2 id="Adaptive"><a href="#Adaptive" class="headerlink" title="Adaptive"></a>Adaptive</h2><p>传统的优化算法要么将学习率设置为常数，要么根据训练次数调节学习率，往往忽视了学习率其它变化的可能性。<br>使用统一的全局学习率的缺点：</p>
+<ul>
+<li>对于某些参数，通过算法已经优化到极小值附近，但是另外一些参数仍然有很大梯度</li>
+<li>学习率太小，则梯度很大的参数收敛速度很慢；学习率太大，已经优化差不多的参数会出现不稳定的情况</li>
+</ul>
+<p>自适应学习率优化算法对每个参与训练的参数设置不同的学习率，在学习过程中如果损失与某一指定参数的偏导符号相同，那么学习率应该增加；如果损失与该参数的偏导符号不同，那么学习率应该减小。<br>自适应学习率算法主要有：AdaGrad算法，RMSProp，Adam和AdaDelta等。</p>
+<h3 id="AdaGrad"><a href="#AdaGrad" class="headerlink" title="AdaGrad"></a>AdaGrad</h3><p>AdaGrad的梯度更新公式是：</p>
+<script type="math/tex; mode=display">
+\theta _{t+1,i}=\theta _{t,i}-\frac{\eta}{\sqrt{G_{t,ii}+\epsilon}}*g_{t,i}</script><p>其中，$g_{t,i}$是$t$时刻参数$\theta _{i}$的梯度：$g_{t,i}=\nabla _{\theta _{t}}J(\theta _{t,i})$。相比于SGD，AdaGrad的更新公式中矫正学习率$\frac{\eta}{\sqrt{G_{t,ii}+\epsilon}}$随着$t$和$i$而变化，也就是所谓的自适应。<br>上式中的$G_t$是对角矩阵，$G_{t,ii}$是到$t$时刻为止参数$\theta _{i}$的<strong>累积梯度平方和</strong>，也就是“二阶动量”。参数更新越频繁，二阶动量就越大，学习率$\frac{\eta}{\sqrt{G_{t,ii}+\epsilon}}$就越小，所以在稀疏的数据场景下表现比较好。</p>
+<p>该优化器的优点：</p>
+<ul>
+<li>自适应学习率，无需人工调节</li>
+</ul>
+<p>该优化器的缺点：</p>
+<ul>
+<li>仍然手工设置一个全局学习率$\eta$，如果该超参数设置过大，会使得对梯度的调节太大</li>
+<li>中后期梯度累加的平方和会越来越大，使得参数更新量趋于0，迫使训练提前结束</li>
+</ul>
+<h3 id="Adadelta"><a href="#Adadelta" class="headerlink" title="Adadelta"></a>Adadelta</h3><p>Adadelta不累积全部历史梯度，而是只关注过去一段时间窗口的下降梯度，即Adadelta只累加固定大小的项，也不直接存储这些项，仅是近似计算对应的平均值（指数移动平均值），从而避免AdaGrad二阶动量持续累积、训练过程提前结束的问题。<br>更新公式：</p>
+<script type="math/tex; mode=display">
+\theta _{t+1,i}=\theta _{t,i}-\frac{\eta}{\sqrt{E[g^2]_{t,i}+\epsilon}}*g_{t,i}</script><p>与AdaGrad相比就是分母的$G$变成了过去的梯度平方的衰减平均值。$E$的计算如下：</p>
+<script type="math/tex; mode=display">
+E[g^2]_t=\gamma*E[g^2]_{t-1}+(1-\gamma)g_t^2</script><p>这个分母相当于梯度的均方根（root mean squared，RMS），可以用RMS简写成</p>
+<script type="math/tex; mode=display">
+\theta _{t+1,i}=\theta _{t,i}-\frac{\eta}{RMS[g]_{t,i}}*g_{t,i}</script><p>该优化器的优点：</p>
+<ul>
+<li>不依赖全局的学习率</li>
+<li>训练初中期，训练速度很快</li>
+</ul>
+<p>该优化器的缺点：</p>
+<ul>
+<li>训练后期，反复在局部最小值附近抖动</li>
+</ul>
+<h3 id="RMSprop"><a href="#RMSprop" class="headerlink" title="RMSprop"></a>RMSprop</h3><p>RMSprop和Adadelta都是为了解决Adagrad学习率急剧下降问题的，但是RMSprop算法修改了AdaGrad的梯度平方和累加为<strong>指数加权的平均移动</strong>，旨在消除梯度下降中的摆动，使得其在非凸设定下效果更好。</p>
+<p>更新方式如下：</p>
+<script type="math/tex; mode=display">
+E[g^2]_t=\alpha * E[g^2]_{t-1}+ (1-\alpha)*g_t^2</script><p>其中$\alpha$是衰减率，常设为0.9。</p>
+<script type="math/tex; mode=display">
+\theta _{t+1}=\theta _{t}-\frac{\eta}{\sqrt{E[g^2]_t+\epsilon}}*g_t</script><p>该优化器的优点：</p>
+<ul>
+<li>RMSprop是Adagrad的一种发展，Adadelta的变体，效果趋于两者之间</li>
+<li>适合处理非平稳目标，对于RNN效果很好</li>
+</ul>
+<p>该优化器的缺点：</p>
+<ul>
+<li>RMSProp依然依赖于全局学习率$\eta$</li>
+</ul>
+<h3 id="Adam"><a href="#Adam" class="headerlink" title="Adam"></a>Adam</h3><p>Adam全称Adaptive Moment Estimation，该优化器结合了动量（momentum）和自适应学习率（AdaGrad），既存储了过去梯度的平方$v_t$的指数衰减平均值，也保持了过去梯度$m_t$的指数衰减平均值：</p>
+<script type="math/tex; mode=display">m_t=\beta _{1}* m_{t-1} + (1 - \beta _{1}) * g_t \\ 
+v_t=\beta _{2}* v_{t-1} + (1-\beta _{2})g_t^2</script><p>如果$m_t$和$v_t$被初始化为0，那么它们就会向0偏置，通过计算偏差校正之后的$m_t$和$v_t$来抵消这些偏差：</p>
+<script type="math/tex; mode=display">\hat{m}_t=\frac{m_t}{1-\beta _{1}^t} \\ \hat{v}_t=\frac{v_t}{1-\beta _{2}^t}</script><p>最终的更新公式为：</p>
+<script type="math/tex; mode=display">\theta _{t+1}=\theta _{t}-\frac{\eta}{\sqrt{\hat{v}_t} + \epsilon}*\hat{m}_t</script><p>该优化器的优点：</p>
+<ul>
+<li>Adam梯度经过偏置校正之后，每一次迭代学习率都有一个固定范围，使得参数比较平稳</li>
+<li>结合了Adagrad善于处理稀疏梯度和RMSprop善于处理非平稳目标的优点</li>
+<li>为不同参数计算不同的自适应学习率</li>
+<li>也适用于大多数非凸优化问题</li>
+</ul>
+<p>该优化器的缺点：</p>
+<ul>
+<li>Adam使用动量的滑动平均，可能会随着训练数据变化而抖动剧烈，在线场景可能波动比较大<h3 id="AdamW"><a href="#AdamW" class="headerlink" title="AdamW"></a>AdamW</h3></li>
+</ul>
+<p>L2正则和Weight Decay在Adam这种自适应学习率算法中并不等价，AdamW使用了严谨的Weight Decay（非L2正则），即权重衰减不参与动量计算，只是在最后更新的公式中使用。</p>
+<script type="math/tex; mode=display">\theta _{t}=\theta _{t-1} - \alpha * (\frac{\hat{m}_t}{\sqrt{\hat{v}_t}+\epsilon}+\lambda * \theta _{t-1})</script><p>【参考资料】</p>
+<ol>
+<li><a href="https://zhuanlan.zhihu.com/p/261695487">优化器-Optimizer</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/150113660">机器学习优化器Optimizer的总结</a></li>
+<li><a href="https://juejin.cn/post/7084409806492008456">史上最全机器学习优化器Optimizer汇总</a></li>
+<li><a href="https://arxiv.org/pdf/1609.04747.pdf">An overview of gradient descent optimization algorithms</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>深度学习</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>常用损失函数</title>
+    <url>/2024/06/03/%E5%B8%B8%E7%94%A8%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0/</url>
+    <content><![CDATA[<p>首先看几个定义：</p>
+<ul>
+<li>损失函数<br>用于定义单个训练样本（的预测值）与真实值之间的误差</li>
+<li>代价函数<br>用于定义单个批次或者整个训练集样本（的预测值）与真实值之间的误差</li>
+<li>目标函数<br>泛指任意可以被优化的函数</li>
+</ul>
+<p>在机器学习中，损失函数是代价函数的一部分，而代价函数是目标函数的一种类型。</p>
+<p>损失函数大致可以分为两类：1）回归损失；2）分类损失。各损失函数有各自的优缺点，没有最好的损失函数，只有最合适的损失函数。</p>
+<h2 id="回归损失"><a href="#回归损失" class="headerlink" title="回归损失"></a>回归损失</h2><h3 id="L1损失"><a href="#L1损失" class="headerlink" title="L1损失"></a>L1损失</h3><p>也称为平均绝对误差（Mean Absolute Error, MAE），该损失衡量的是预测值和真实值之间距离的平均误差，计算方式如下：</p>
+<p>$MAE =\frac{1}{n} \sum_{i=1}^{n}|y_{truth}^{i}-y_{pred}^{i}|$</p>
+<p>该损失函数的优点：</p>
+<ul>
+<li>无论对于怎样的输入，都有稳定的梯度（1或者-1），不会导致梯度爆炸等问题</li>
+<li>鲁棒性比较强，对于异常点不太敏感（相对于L2损失将异常值的误差放大）</li>
+</ul>
+<p>该损失函数的缺点：</p>
+<ul>
+<li>在中心点不能求导，不方便求解</li>
+<li>由于稳定的梯度，在训练后期如果不改变学习率，损失函数会在稳定值的附近发生持续震荡难以收敛</li>
+</ul>
+<h3 id="L2损失"><a href="#L2损失" class="headerlink" title="L2损失"></a>L2损失</h3><p>也称为均方差（Mean Squared Error, MSE），该损失衡量预测值和真实值之间距离的平方和，计算方式如下：</p>
+<p>$MSE =\frac{1}{n} \sum_{i=1}^{n}(y_{truth}^{i}-y_{pred}^{i})^2$</p>
+<p>该损失函数的优点：</p>
+<ul>
+<li>各点连续光滑，求导方便</li>
+<li>稳定性强，当添加新数据时L2损失的整体变动要比L1损失要小得多</li>
+<li>对异常值敏感，当异常值对研究很重要时，该损失函数不失为好选择</li>
+</ul>
+<p>该损失函数的缺点：</p>
+<ul>
+<li>离最低点越远，梯度越大，使用梯度下降法求解时可能会导致梯度爆炸</li>
+<li>离最低点越近，梯度越小，这会造成训练速度变慢</li>
+<li>对异常值敏感，梯度更新的方向很容易受离群点影响，不具备鲁棒性（当异常值对研究不那么重要时，这就成缺点了）</li>
+</ul>
+<h3 id="Smooth-L1损失"><a href="#Smooth-L1损失" class="headerlink" title="Smooth L1损失"></a>Smooth L1损失</h3><p>该损失函数是对L1损失和L2损失的折中，对个单个样本来说，其计算方式如下：</p>
+<script type="math/tex; mode=display">
+f(x) = \begin{cases}   
+  0.5x^2, & \text{if } |x| <= 1 \\  
+  |x|-0.5, & \text{if } |x| > 1 
+\end{cases}</script><p>其中$x=y_{truth}-y_{pred}$。具体来说早期训练时采用L1损失，梯度稳定，快速收敛；训练后期使用L2损失，逐渐收敛到最优解。</p>
+<p>该损失函数的优点：</p>
+<ul>
+<li>相比于L1损失函数，可以收敛更快</li>
+<li>相比于L2损失函数，对离群点、异常值不敏感，梯度变化相对更小，训练更加稳定</li>
+</ul>
+<h2 id="分类损失"><a href="#分类损失" class="headerlink" title="分类损失"></a>分类损失</h2><h3 id="交叉熵损失"><a href="#交叉熵损失" class="headerlink" title="交叉熵损失"></a>交叉熵损失</h3><p><strong>熵</strong></p>
+<blockquote>
+<p>熵的概念首次被香农提出，目的是寻找一种高效、无损的编码信息的方法。以编码后数据的平均长度来衡量高效性，平均长度越短越高效；编码后不能有原始信息的丢失，即为无损。所以熵就是<strong>无损编码事件信息的最小平均编码长度</strong>。</p>
+</blockquote>
+<p>对于具有$N$种<strong>等可能性</strong>状态的信息来说，每种状态的可能性是$\frac{1}{N}$，编码该信息所需要的最小编码长度是：$log_{2}N=-log_{2}\frac{1}{N}=-log_{2}P$。那么对于通用的概率分布来说，计算最小平均编码长度，也就是熵的公式可以泛化为：$Entropy=-\sum_{i}P(i)log_{2}P(i)$。当我们知道任何事件的概率分布时，都可以计算它的熵。<br>一般来说，对高可能性事件采用短编码，对低可能性事件采用长编码，得到的平均编码长度会比较短。</p>
+<p>如果熵比较大，说明平均编码长度比较长，这意味着这一信息有比较多的可能状态，相应的每个状态的可能性比较低，因此每当来一个新的信息，我们很难对其作出准确预测，即有比较大的混乱程度/不确定性/不可预测性。</p>
+<hr>
+<p><strong>交叉熵</strong><br>当我们知道了事件的概率分布时，我们可以计算它的熵；如果我们不知道事件的概率分布，又想计算熵，就需要做一个估计。<br>假设真实的概率分布是$P$，估计的概率分布是$Q$，使用$P$计算平均编码长度，实际编码长度基于$Q$计算，这个计算结果就是$P$和$Q$的交叉熵。如此，实际编码长度和理论最小编码长度就有了对比的意义。</p>
+<script type="math/tex; mode=display">CrossEntropy=E_{X \sim P}[-log_{2}Q(x)]</script><p>【注】假设交叉熵用$H(P,Q)$表示，那么在大多数情况下$H(P,Q)!=H(Q,P)$。且由于熵是理论上的最小平均编码长度，所以$H(P,Q)&gt;=H(P)$。</p>
+<p>对于分类任务来说，假设用one-hot编码作为标签，那么每个样本都有100%的确定度。如果有5个类别，某样本的真实标签为<code>[1,0,0,0,0]</code>，而预测标签为<code>[0.4,0.3,0.05,0.05,0.2]</code>，那么两者的交叉熵为$-(1<em>log(0.4) + 0</em>log(0.3) + 0<em>log(0.05) + 0</em>log(0.05) + 0<em>log(0.2)) \approx 0.916$。随着预测越来越准确，交叉熵的值会越来越小，如果预测完全正确，那么交叉熵的值就为0。因此，训练分类模型时，可以使用交叉熵作为损失函数。此外，我们也可以看到交叉熵的损失<em>*只取决于被正确分类的概率</em></em>，因为对于真实标签的概率分布来说其它类别的概率都是0。</p>
+<hr>
+<p><strong>交叉熵损失</strong></p>
+<p>在二分类模型中，标签只有<em>是</em>和<em>否</em>两种，此时，可以使用二分类交叉熵作为损失函数。计算公式如下：</p>
+<script type="math/tex; mode=display">\begin{aligned}
+    H(P,Q)&=-\sum_{i=(yes,no)}P(i)log(Q(i))\\&=-P(yes)logQ(yes)-P(no)logQ(no)
+\end{aligned}</script><p>由于是二分类，所以$P(yes)+P(no)=1$且$Q(yes)+Q(no)=1$，所以二分类交叉熵损失可以变成：</p>
+<script type="math/tex; mode=display">\begin{aligned}
+    H(P,Q)=-P(yes)logQ(yes)-(1-P(yes))log(1-Q(yes))
+\end{aligned}</script><p>需要说明的是，模型并不会直接预测各类别的概率，而是首先计算各类别的得分，再由<code>softmax</code>（或者<code>sigmoid</code>）转换为概率分布。</p>
+<p>该损失函数的优点：</p>
+<ul>
+<li>采用类间竞争机制，比较擅长学习类与类之间的信息</li>
+<li>具有凸函数的性质，使得优化算法（如梯度下降）可以更容易地找到全局最优解，避免陷入局部最优解</li>
+<li>模型预测效果和偏导值负相关，即模型效果越差偏导值越大，所以在模型效果差的时候收敛速度快，模型效果好的时候更新速度慢</li>
+</ul>
+<p>该损失函数的缺点：</p>
+<ul>
+<li>只关心对正确标签预测概率的准确性，忽略了其它错误标签的差异，在特征空间中可能不会形成紧凑且易于区分的类别表示，从而导致学习到的特征比较分散</li>
+<li>当特征不够紧凑时，由于新数据的特征表示可能与训练数据的特征表示存在较大差异，模型在新数据上可能难以实现准确的分类，影响模型泛化性</li>
+</ul>
+<p>当类别之间存在重叠或者模糊边界时，交叉熵损失函数不是好的选择，可能需要更复杂的损失函数。</p>
+<h3 id="负对数似然损失函数"><a href="#负对数似然损失函数" class="headerlink" title="负对数似然损失函数"></a>负对数似然损失函数</h3><p>负对数似然损失函数应用于多分类问题，在二分类情况下等价于交叉熵损失函数，计算方式如下：</p>
+<script type="math/tex; mode=display">L=-\sum_{i=1}^{M}\sum_{j=1}^{M}p_{ij}logq_{ij}</script><p>其中$M$是分类任务的类别数目。</p>
+<p>和交叉熵损失函数没有本质不同，无非是用于多分类还是二分类，激活函数使用<code>softmax</code>还是<code>sigmoid</code>。</p>
+<h3 id="NCE损失"><a href="#NCE损失" class="headerlink" title="NCE损失"></a>NCE损失</h3><p>噪声对比估计损失，全称Noise Contrastive Estimation。分类任务中的类别比较少的时候，可以直接用标准的<code>softmax</code>公式计算，但是当类别特别多的时候，需要采用<strong>估算近似</strong>的方法简化<code>softmax</code>中归一化的计算。</p>
+<p><strong>极大似然估计</strong><br>在机器学习领域有一个方法，对问题建模以后为其构造一个目标函数，然后对这个目标函数进行优化，从而得到一组最优参数，最后利用这组最优参数对应的模型进行预测，这就是极大似然估计。</p>
+<p>在建模统计语言模型时，利用极大似然估计和马尔科夫假设（n-gram语言模型），我们可以写出其极大似然函数：</p>
+<script type="math/tex; mode=display">L_{MLE}=\prod_{i}{p_{\theta}(w_i|c_i)}</script><p>因为直接计算连乘可能导致数值下溢，通常会对上式取对数，转换为求和形式：</p>
+<script type="math/tex; mode=display">L_{MLE}=\sum_{w_i \in s}log{p_{\theta}(w_i|c_i)}</script><p>我们的目标就是最大化似然函数$L_{MLE}$，就是把$p(w|c)$看成$w$和$c$的函数，$\theta$为待定参数集，我们的目标就是得到$p_{\theta}(w|c)=F(w,c;\theta)$；一旦$\theta$确定，任何概率$p(w|c)$都可以计算出来。</p>
+<p>假设输入到<code>softmax</code>之前的结果用$s_{\theta}(w,c)$表示，这是一个打分函数，输出的分数用来量化单词$w$在上下文$c$中的匹配性，那么：</p>
+<script type="math/tex; mode=display">\begin{aligned}
+    p_{\theta}(w|c) &= \frac{exp(s_{\theta}(w,c))}{\sum_{w^{'} \in V}exp(s_{\theta}(w^{'},c))}
+                    &= \frac{u_{\theta}(w,c)}{Z(c)} 
+\end{aligned}</script><p>假设我们从训练数据中得出经验分布$p^{‘}(w|c)$，根据最大期望算法，对数似然函数可以写出：</p>
+<script type="math/tex; mode=display">arg \ max \ L_{MLE}=arg \ max \ E_{w \sim p^{'}(w|c)} log\frac{u_{\theta}(w,c)}{Z(c)}</script><p>由于单词库$V$数量巨大，因此计算$Z(c)$计算量很大，这就是NCE要解决的问题。</p>
+<p><strong>NCE</strong><br>NCE的核心思想是通过学习<strong>数据分布样本</strong>和<strong>噪声分布样本</strong>之间的差异，发现数据中的一些特性，由于这个方法需要依靠与噪声数据进行对比，所以被称为“噪声对比估计”（Noise Contrastive Estimation）。更具体地，NCE将多分类问题转换成了一个二分类问题，分类器能够对数据样本和噪声样本进行二分类，这个分类器的参数$\theta$等价于$p_{\theta}(w|c)$中的$\theta$。对于设置的噪声分布，我们希望它尽可能接近数据分布，否则这个二分类任务过于简单，也就无法很好地学到数据特性。</p>
+<p>对于单词$w_i$，假设它的上下文为$c_i$，假设噪声分布为$Q$，从$Q$中生成$k$个噪声词（从词表中采样）$\widetilde{w}_{ij}$。那么$(c_i,w_i)$构成了正样本$(y=1)$，$(c_i,\widetilde{w}_{ij})$构成了负样本$(y=0)$。如那么可以构造如下损失函数：</p>
+<script type="math/tex; mode=display">J_{\theta}=-\sum_{w_i \in V}[logP(y=1|c_i,w_i)+\sum_{j=1}^{k}logP(y=0|c_i,\widetilde{w}_{ij})]</script><p>上述损失函数中有$k+1$个样本，可以看成从两种不同的分布中分别采样得到，一个是根据训练集的经验分布$P_{train}$每次从词表中采样一个目标样本，其依赖于上下文$c$；另一个是依据噪音分布$Q$每次从词表中采样$k$个噪音样本（不包括目标样本）。基于这两种分布，有如下混合分布的采样概率：</p>
+<script type="math/tex; mode=display">P(w|c)=\frac{1}{k+1}P_{train}(w|c)+\frac{k}{k+1}Q(w)</script><p>那么$P(y=1,w|c)=\frac{\frac{1}{k+1}P_{train}(w|c)}{\frac{1}{k+1}P_{train}(w|c)+\frac{k}{k+1}Q(w)}$，而$P_{train}(w|c)$就是我们要学习的参数。</p>
+<script type="math/tex; mode=display">P_{train}(w|c)=\frac{exp(h^T v_w)}{\sum_{w^{'} \in V}exp(h^T v_{w^{'}})}</script><p>看起来上式的分母还是需要对词表中的每一个词进行归一化操作？NCE将其处理成可学习的参数。从实际学习的数值看，每次分母的数值接近1且方差较小，因此实际操作时，可以直接设为1。所以$P_{train}(w|c)$可以简化为$P_{train}(w|c)=exp(h^{T} v_{w})$。那么预测出正样本的概率为：</p>
+<script type="math/tex; mode=display">P(y=1|w,c)=\frac{exp(h^T v_{w})}{exp(h^T v_{w}) + k Q(w)}</script><p>那么最终的NCE损失函数为：</p>
+<script type="math/tex; mode=display">J_{\theta}=-\sum_{w_i \in V}[log\frac{exp(h^T v_{w_i})}{exp(h^T v_{w_i}) + kQ(w_i)} + \sum_{j=1}^{k}log(1-\frac{exp(h^T v_{\widetilde{w}_{ij}})}{exp(h^T v_{\widetilde{w}_{ij}} + kQ(\widetilde{w}_{ij}))})]</script><p>研究者通过实验和推导证明，当负样本和正样本数量之比$k$越大，NCE的导数趋向于<code>softmax</code>的梯度，那么NCE对于噪声分布好坏的依赖程度也就越小。也就是说，在计算能力允许的条件下，应尽可能增大负样本数量。有研究证明，25个噪音样本足以匹配常规softmax的性能，且有45倍的加速。</p>
+<p>【参考文献】</p>
+<ol>
+<li><a href="https://mp.weixin.qq.com/s/oOky55insOPuhMlTn4fG8Q">一文看尽深度学习中的各种损失函数</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/149186719">熵和交叉熵</a></li>
+<li><a href="https://muyuuuu.github.io/2021/04/02/cross-entropy/">交叉熵优缺点分析</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/334772391">Noise Contrastive Estimation 前世今生——从 NCE 到 InfoNCE</a></li>
+<li><a href="https://carlos9310.github.io/2019/10/15/Approximating-the-Softmax/">softmax的近似——NCE详解</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>深度学习</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>常用激活函数</title>
+    <url>/2024/06/03/%E5%B8%B8%E7%94%A8%E6%BF%80%E6%B4%BB%E5%87%BD%E6%95%B0/</url>
+    <content><![CDATA[<p>激活函数是一种添加到人工神经网络中的函数，<strong>旨在帮助网络学习数据中的复杂模式</strong>。在神经网络中，一个节点的激活函数定义了该节点在给定输入或输入集合下的输出。</p>
+<p>激活函数的作用：<br>神经网络中每一层的输入输出都是一个线性求和的过程，如果没有（非线性）激活函数，那么无论构造的神经网络有多么复杂，有多少层，最后的输出都是输入的<strong>线性组合</strong>。纯粹的线性组合不能解决复杂问题，而引入了非线性激活函数以后，神经网络可以逼近任何非线性函数，从而处理更加复杂的问题。</p>
+<p>梯度消失问题：<br>有些神经元的梯度趋近于0，这些神经元的权重不会更新，也被称为饱和神经元。此外，与饱和神经元相连的神经元的权重也会更新的很慢。如果神经网络中包含大量的饱和神经元，那么这个网络无法进行反向传播，这一问题就是<strong>梯度消失</strong>。</p>
+<h2 id="Sigmoid激活函数"><a href="#Sigmoid激活函数" class="headerlink" title="Sigmoid激活函数"></a>Sigmoid激活函数</h2><p>Sigmoid函数也叫Logistic函数，该函数将一个实数映射到<code>(0,1)</code>的区间，可以用来做二分类。</p>
+<script type="math/tex; mode=display">f(x)=\frac{1}{1+e^{-x}}</script><p>该函数的优点：</p>
+<ul>
+<li>由于输出范围是<code>(0,1)</code>，该激活函数对每个神经元的输出进行了归一化</li>
+<li>和概率的取值范围一样，适合将预测概率作为输出的模型</li>
+<li>函数可微且梯度平滑，避免出现跳跃的输出值</li>
+</ul>
+<p>该函数的缺点：</p>
+<ul>
+<li>函数趋于0或者1的时候，函数的梯度趋近于0，可能会导致<strong>梯度消失</strong></li>
+<li>输出不以零为中心，会导致后一层的神经元输入发生偏置偏移（Bias Shift），进而使得梯度下降收敛速度变慢</li>
+<li>指数计算成本较高，影响运行速度</li>
+</ul>
+<h2 id="Tanh激活函数"><a href="#Tanh激活函数" class="headerlink" title="Tanh激活函数"></a>Tanh激活函数</h2><p>Tanh激活函数又叫做双曲正切激活函数，与Sigmoid函数类似，但是Tanh函数的输出以零为中心，输出范围是<code>(-1, 1)</code>。</p>
+<script type="math/tex; mode=display">f(x)=tanh(x)=\frac{e^{x}-e^{-x}}{e^x+e^{-x}}=\frac{2}{1+e^{-2x}}-1</script><p>该函数的优点：</p>
+<ul>
+<li>相较于Sigmoid函数，Tanh函数的输出是以零为中心的，这意味着正负值的分布是均匀的，有助于数据在训练过程中保持稳定，也有助于加速收敛</li>
+<li>虽然在输入值过大或过小时，梯度接近于0，但是相较于Sigmoid函数，Tanh函数的中间区域的梯度更大，可以一定程度上缓降梯度消失问题</li>
+</ul>
+<p>该函数的缺点：</p>
+<ul>
+<li>输入较大或者较小时，输出几乎是平滑的且梯度较小，不利于权重更新，仍然存在梯度消失问题</li>
+<li>指数计算需要更多资源</li>
+</ul>
+<h2 id="ReLU激活函数"><a href="#ReLU激活函数" class="headerlink" title="ReLU激活函数"></a>ReLU激活函数</h2><p>ReLU函数又称为修正线性单元（Rectified Linear Unit），是一种分段线性函数。</p>
+<script type="math/tex; mode=display">
+f(x) = \begin{cases}
+    x, & x >= 0 \\
+    0, & x < 0
+\end{cases}</script><p>该激活函数的优点：</p>
+<ul>
+<li>输入为正时，导数为1，一定程度上改善了梯度消失问题，加速梯度下降的收敛速度</li>
+<li>只存在线性关系，计算速度很快</li>
+<li>有一定的生物学合理性，如单侧抑制</li>
+</ul>
+<p>该激活函数的缺点：</p>
+<ul>
+<li>当输入为负时，输出为0，反向传播时可能会导致梯度消失</li>
+<li>不以零为中心，会给下一层神经元引入偏置偏移，影响梯度下降的效率</li>
+</ul>
+<h3 id="Leaky-ReLU激活函数"><a href="#Leaky-ReLU激活函数" class="headerlink" title="Leaky ReLU激活函数"></a>Leaky ReLU激活函数</h3><p>该函数是对ReLU激活函数的优化，主要解决ReLU激活函数中梯度消失的问题。</p>
+<script type="math/tex; mode=display">
+f(x) = \begin{cases}
+    x, & x >= 0 \\
+    \gamma x, & x < 0
+\end{cases}</script><p>其中$\gamma$是个很小的数，如0.1或者0.01等。</p>
+<p>该激活函数的优点：</p>
+<ul>
+<li>允许负值以小斜率通过，有助于避免神经元失活，使得模型更容易学习</li>
+<li>具有ReLU函数的优点</li>
+</ul>
+<p>该激活函数的缺点：</p>
+<ul>
+<li>负斜率是一个超参数，如何选择该参数需要通过实验来确定，设置过大会导致模型过拟合，设置过小又无法充分发挥Leaky ReLU的优势</li>
+<li>梯度的反向传播不如ReLU稳定，会导致训练过程中出现波动</li>
+</ul>
+<h3 id="ELU激活函数"><a href="#ELU激活函数" class="headerlink" title="ELU激活函数"></a>ELU激活函数</h3><p>ELU，全称是Exponential Linear Unit，该激活函数同样是针对ReLU负数部分存在的问题，被证实有较高的噪声鲁棒性。</p>
+<script type="math/tex; mode=display">
+f(x) = \begin{cases}
+    x, & x >= 0 \\
+    \alpha (e^x - 1) x, & x < 0
+\end{cases}</script><p>该激活函数的优点：</p>
+<ul>
+<li>ELU在输入值非常小的时候，会饱和至负值，具有一定的鲁棒性</li>
+<li>避免“死亡ReLU”问题</li>
+</ul>
+<p>该激活函数的缺点：</p>
+<ul>
+<li>涉及指数计算，其计算复杂度相对较高，导致训练大型神经网络时训练速度较慢</li>
+<li>在输入较小时，梯度可能会饱和，导致训练的某些阶段权重更新缓慢，影响模型收敛速度</li>
+</ul>
+<h2 id="Softmax激活函数"><a href="#Softmax激活函数" class="headerlink" title="Softmax激活函数"></a>Softmax激活函数</h2><p>Softmax激活函数主要用于多分类问题的输出层，将神经网络的输出转换为概率分布。</p>
+<script type="math/tex; mode=display">S(i)=\frac{e^{z_i}}{\sum_{j=1}^{K}e^{z_j}}</script><p>该激活函数的优点：</p>
+<ul>
+<li>能够将神经网络的输出转换为概率分布，非常适用于多分类任务</li>
+</ul>
+<p>该激活函数的缺点：</p>
+<ul>
+<li>当输入值非常大或者非常小的时候，Softmax函数的梯度会变得很小，可能会导致梯度消失问题，影响模型的训练效果</li>
+<li>Softmax函数计算时涉及指数运算，可能会增加计算复杂度</li>
+</ul>
+<p>一般来说，Softmax函数用于单标签的多分类问题，即每个样本只能属于一个类别。如果是多标签的多分类任务，即每个样本可能属于多个类别，那么使用Sigmoid激活函数更为合适，因为该激活函数将每个类别的输出独立地映射到<code>(0,1)</code>之间，从而允许每个样本属于多个类别。</p>
+]]></content>
+      <categories>
+        <category>深度学习</category>
       </categories>
   </entry>
 </search>
