@@ -56,7 +56,7 @@
 <meta property="og:description" content="在模型训练过程中，优化器负责更新模型参数，选择合适的优化器对模型的效果起到至关重要的作用。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2024-06-03T13:15:22.000Z">
-<meta property="article:modified_time" content="2024-06-03T15:19:05.395Z">
+<meta property="article:modified_time" content="2024-06-04T12:38:03.594Z">
 <meta property="article:author" content="suhejian">
 <meta name="twitter:card" content="summary">
 
@@ -224,10 +224,16 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2024-06-03 21:15:22 / 修改时间：23:19:05" itemprop="dateCreated datePublished" datetime="2024-06-03T21:15:22+08:00">2024-06-03</time>
+              <time title="创建时间：2024-06-03 21:15:22" itemprop="dateCreated datePublished" datetime="2024-06-03T21:15:22+08:00">2024-06-03</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-06-04 20:38:03" itemprop="dateModified" datetime="2024-06-04T20:38:03+08:00">2024-06-04</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="fa fa-folder-o"></i>
@@ -291,7 +297,7 @@ g_t = \nabla _{\theta}J(\theta)</script><p>梯度下降法参数更新：</p>
 <li>SGD在随机选择梯度的时候会引入噪声，使得权重更新的方向不一定正确</li>
 </ul>
 <h3 id="BGD"><a href="#BGD" class="headerlink" title="BGD"></a>BGD</h3><p>BGD全称是Batch Gradient Descent，批量梯度下降法。</p>
-<p>BGD不像标准梯度下降一样对每个样本输入都进行参数更新，而是针对<strong>一批</strong>（或者一个子集）输入数据进行参数更新。假设所有的训练样本总数为$n$，样本为$\{ (x_1,y_1),…,(x_n,y_n) \}，模型参数为$\theta$，在对第$i$个样本$(x_i,y_i)$上的损失函数关于参数的梯度为$\nabla _{\theta}J_i(\theta,x_i,y_i)$，则使用BGD更新参数的式子为：</p>
+<p>BGD不像标准梯度下降一样对每个样本输入都进行参数更新，而是针对<strong>一批</strong>（或者一个子集）输入数据进行参数更新。假设所有的训练样本总数为$n$，样本为$\{ (x_1,y_1),…,(x_n,y_n) \}$，模型参数为$\theta$，在对第$i$个样本$(x_i,y_i)$上的损失函数关于参数的梯度为$\nabla _{\theta}J_i(\theta,x_i,y_i)$，则使用BGD更新参数的式子为：</p>
 <script type="math/tex; mode=display">
 \theta _{t+1} = \theta _{t} - \eta * \frac{1}{n} * \sum_{i=1}^{n} \nabla _{\theta _{t}}J_i(\theta _t, x_i, y_i)</script><p>该优化器的优点：</p>
 <ul>
@@ -319,7 +325,7 @@ g_t = \nabla _{\theta}J(\theta)</script><p>梯度下降法参数更新：</p>
 </blockquote>
 <p>假设$m_t$表示$t$时刻的动量，$\gamma$表示动量因子，通常取0.9，在SGD的基础上增加动量，则参数更新公式为：</p>
 <script type="math/tex; mode=display">m_{t+1}=\gamma * m_t + \eta * \nabla _{\theta} J(\theta)</script><p>SGD只使用了当前步的梯度，随机性较大，momentum在SGD的基础上增加动量，将历次迭代的梯度按比例融合，可能更加稳定，更有利于跳出局部最优。</p>
-<script type="math/tex; mode=display">\theta _{t+1}=\theta _{t} - m_{t+1}</script><p>由于动量因子$\gamma$的经验值是0.9，这意味着下降方向主要是此前累积的下降方向，并略微偏向当前时刻的下降方向。在梯度方向改变时，momentum能够降低参数更新速度，从而减少震荡；在梯度方向相同时，momentum可以加速参数更新，从而加速收敛。</p>
+<script type="math/tex; mode=display">\theta _{t+1}=\theta _{t} - m_{t+1}</script><p>由于动量因子$\gamma$的经验值是0.9，这意味着下降方向<strong>主要是此前累积的下降方向</strong>，并<strong>略微偏向当前时刻的下降方向</strong>。在梯度方向改变时，momentum能够降低参数更新速度，从而<strong>减少震荡</strong>；在梯度方向相同时，momentum可以<strong>加速参数更新</strong>，从而加速收敛。</p>
 <p>该优化器的优点：</p>
 <ul>
 <li>前后梯度一致时能够加速收敛速度</li>
@@ -376,7 +382,7 @@ E[g^2]_t=\alpha * E[g^2]_{t-1}+ (1-\alpha)*g_t^2</script><p>其中$\alpha$是衰
 <ul>
 <li>RMSProp依然依赖于全局学习率$\eta$</li>
 </ul>
-<h3 id="Adam"><a href="#Adam" class="headerlink" title="Adam"></a>Adam</h3><p>Adam全称Adaptive Moment Estimation，该优化器结合了动量（momentum）和自适应学习率（AdaGrad），既存储了过去梯度的平方$v_t$的指数衰减平均值，也保持了过去梯度$m_t$的指数衰减平均值：</p>
+<h2 id="Momentum-Adaptive"><a href="#Momentum-Adaptive" class="headerlink" title="Momentum + Adaptive"></a>Momentum + Adaptive</h2><h3 id="Adam"><a href="#Adam" class="headerlink" title="Adam"></a>Adam</h3><p>Adam全称Adaptive Moment Estimation，该优化器结合了动量（momentum）和自适应学习率（AdaGrad），既存储了过去梯度的平方$v_t$的指数衰减平均值，也保持了过去梯度$m_t$的指数衰减平均值：</p>
 <script type="math/tex; mode=display">m_t=\beta _{1}* m_{t-1} + (1 - \beta _{1}) * g_t \\ 
 v_t=\beta _{2}* v_{t-1} + (1-\beta _{2})g_t^2</script><p>如果$m_t$和$v_t$被初始化为0，那么它们就会向0偏置，通过计算偏差校正之后的$m_t$和$v_t$来抵消这些偏差：</p>
 <script type="math/tex; mode=display">\hat{m}_t=\frac{m_t}{1-\beta _{1}^t} \\ \hat{v}_t=\frac{v_t}{1-\beta _{2}^t}</script><p>最终的更新公式为：</p>
@@ -389,9 +395,9 @@ v_t=\beta _{2}* v_{t-1} + (1-\beta _{2})g_t^2</script><p>如果$m_t$和$v_t$被�
 </ul>
 <p>该优化器的缺点：</p>
 <ul>
-<li>Adam使用动量的滑动平均，可能会随着训练数据变化而抖动剧烈，在线场景可能波动比较大<h3 id="AdamW"><a href="#AdamW" class="headerlink" title="AdamW"></a>AdamW</h3></li>
+<li>Adam使用动量的滑动平均，可能会随着训练数据变化而抖动剧烈，在线场景可能波动比较大</li>
 </ul>
-<p>L2正则和Weight Decay在Adam这种自适应学习率算法中并不等价，AdamW使用了严谨的Weight Decay（非L2正则），即权重衰减不参与动量计算，只是在最后更新的公式中使用。</p>
+<h3 id="AdamW"><a href="#AdamW" class="headerlink" title="AdamW"></a>AdamW</h3><p>L2正则和Weight Decay在Adam这种自适应学习率算法中并不等价，AdamW使用了严谨的Weight Decay（非L2正则），即权重衰减不参与动量计算，只是在最后更新的公式中使用。</p>
 <script type="math/tex; mode=display">\theta _{t}=\theta _{t-1} - \alpha * (\frac{\hat{m}_t}{\sqrt{\hat{v}_t}+\epsilon}+\lambda * \theta _{t-1})</script><p>【参考资料】</p>
 <ol>
 <li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/261695487">优化器-Optimizer</a></li>
@@ -480,7 +486,7 @@ v_t=\beta _{2}* v_{t-1} + (1-\beta _{2})g_t^2</script><p>如果$m_t$和$v_t$被�
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D"><span class="nav-text">梯度下降</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SGD"><span class="nav-text">SGD</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BGD"><span class="nav-text">BGD</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MBGD"><span class="nav-text">MBGD</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Momentum"><span class="nav-text">Momentum</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Adaptive"><span class="nav-text">Adaptive</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#AdaGrad"><span class="nav-text">AdaGrad</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Adadelta"><span class="nav-text">Adadelta</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RMSprop"><span class="nav-text">RMSprop</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Adam"><span class="nav-text">Adam</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AdamW"><span class="nav-text">AdamW</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6%E4%B8%8B%E9%99%8D"><span class="nav-text">梯度下降</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SGD"><span class="nav-text">SGD</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BGD"><span class="nav-text">BGD</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MBGD"><span class="nav-text">MBGD</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Momentum"><span class="nav-text">Momentum</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Adaptive"><span class="nav-text">Adaptive</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#AdaGrad"><span class="nav-text">AdaGrad</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Adadelta"><span class="nav-text">Adadelta</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RMSprop"><span class="nav-text">RMSprop</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Momentum-Adaptive"><span class="nav-text">Momentum + Adaptive</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Adam"><span class="nav-text">Adam</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#AdamW"><span class="nav-text">AdamW</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
