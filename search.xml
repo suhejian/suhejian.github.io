@@ -246,6 +246,109 @@ PE_{(pos, 2i+1)}=cos(pos / 10000^{2i / d_{model}})</script><p>其中$pos$是位�
       </categories>
   </entry>
   <entry>
+    <title>常用Normalization</title>
+    <url>/2024/06/05/%E5%B8%B8%E7%94%A8Normalization/</url>
+    <content><![CDATA[<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>协变量偏移（Covariate Shift）是统计学的一个概念，它描述了源域（$S$）和目标域（$T$）边缘分布的不一致，但是它们的条件分布却是相同的即$P_{T}(y|x)s=P_{S}(y|x)$。<br>对深度学习来说条件分布$P(y|x)$是我们训练得到的模型，如果训练集分布和测试集分布存在差异，即$P(X_{train})$和$P(X_{test})$不一致，那么就会出现Covariate Shift。</p>
+<p>此时会出现两个结果：</p>
+<ul>
+<li>用训练集得到的模型在测试集上做性能评估，得到的不是模型的真实水平</li>
+<li>训练集和测试集分布差异过大，我们训练得到的不是真实模型</li>
+</ul>
+<p>因此在机器学习中，我们期望数据是<strong>独立同分布</strong>的，这要求训练集和测试集的样本都是从同一个分布独立采样而来。独立同分布的数据可以简化常规机器学习模型的训练，提升机器学习模型的预测能力。</p>
+<p>但是在深层神经网络的训练中，当中间神经层的前一层参数发生改变时，该层的输入分布也会发生改变，也就是存在内部协变量偏移（Internal Covariate Shift）问题。中间的神经层需要不断适应这种变化，这会降低整个网络的收敛速度。</p>
+<p>由于参数更新导致网络中的每一层输入值分布发生改变，这才导致了ICS问题，因此可以通过<strong>固定每一层网络的输入值分布</strong>来减缓ICS问题。</p>
+<p>一般来说，有两种策略：</p>
+<ul>
+<li>白化（Whitening）<br>白化之后的数据特征之间相关性较低，所有特征具有相同的方差<br>不过由于以下原因，白化不是目前的主流选择：1）白化过程计算成本太高，如PCA中需要计算协方差矩阵，并在每一轮训练的每一层都执行该运算；2）白化过程改变了网络中每一层的分布，因此改变了网络层中本身数据的表达能力，底层网络学习到的参数信息会被白化操作丢失。</li>
+<li>归一化（Normalization）<br>Normalization能够使得样本处于同一分布，且可以解决每批训练数据分布不同的问题</li>
+</ul>
+<p>任何Normalization的意义都是为了让使用Normalization的网络的<strong>输入数据分布变得更好</strong>，也即转换为标准正态分布，以<strong>减缓梯度消失</strong>，从而<strong>更容易训练</strong>。执行的操作也差不多，先减去均值，再除以标准差，最后做一次线性变换。主要区别在于操作的<strong>特征维度</strong>不同。</p>
+<script type="math/tex; mode=display">y=\gamma (\frac{x-\mu(x)}{\sigma(x)}) + \beta</script><p>不过要明确，在某一维度内进行Normalization，那么在该维度内相对大小是有意义的；但是在Normalization之后的不同维度之间，相对大小是没有意义的。这意味着舍弃了除此维度之外其它维度的信息。</p>
+<h2 id="Batch-Normalization"><a href="#Batch-Normalization" class="headerlink" title="Batch Normalization"></a>Batch Normalization</h2><p>假设输入数据的维度是：$x \in \mathbb{R}^{N \times C \times H \times W}$，Batch Normalization在对其求均值和方差时，将在$N$，$H$，$W$维度上操作，保留通道$C$的维度。</p>
+<script type="math/tex; mode=display">\mu _{c}(x)=\frac{1}{NHW}\sum_{n=1}^{N}\sum_{h=1}^{H}\sum_{w=1}^{W}x_{nchw} \\
+\sigma_c(x)=\sqrt{\frac{1}{NHW}\sum_{n=1}^{N}\sum_{h=1}^{H}\sum_{w=1}^{W}(x_{nchw}-\mu_c(x))^2 + \epsilon}</script><p>代码实现：<br><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"></span><br><span class="line">N, C, H, W = <span class="number">10</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">5</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">x = torch.rand(N, C, H, W) * <span class="number">10000</span></span><br><span class="line">bn = nn.BatchNorm2d(num_features=C, eps=<span class="number">0</span>, affine=<span class="literal">False</span>, track_running_stats=<span class="literal">False</span>)</span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">official_bn = bn(x)</span><br><span class="line"></span><br><span class="line"><span class="comment"># [C, N * H * W]</span></span><br><span class="line">x1 = x.permute(<span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">3</span>).reshape(C, -<span class="number">1</span>)</span><br><span class="line"><span class="comment"># [1, C, 1, 1]</span></span><br><span class="line">mu = x1.mean(dim=<span class="number">1</span>).reshape(<span class="number">1</span>, C, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">std = x1.std(dim=<span class="number">1</span>, unbiased=<span class="literal">False</span>).reshape(<span class="number">1</span>, C, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">my_bn = (x - mu) / std</span><br><span class="line"><span class="built_in">print</span>(my_bn.shape)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 误差在1e-5量级</span></span><br><span class="line">diff = (official_bn - my_bn).<span class="built_in">sum</span>()</span><br><span class="line"><span class="built_in">print</span>(diff)</span><br></pre></td></tr></table></figure></p>
+<p>Batch Normalization广泛应用于CV，针对同一特征，以跨样本的方式开展归一化，也就是对不同样本的同一channel间的所有像素值进行归一化。因此不会破坏不同样本同一特征之间的关系，因为“减均值，除标准差”只是一个平移+缩放的线性操作，归一化前较大的数值在归一化之后依旧是较大的。</p>
+<p>这一性质决定了经过归一化操作之后，样本之间仍然具有可比较性。但是特征和特征之间不再具备可比较性。</p>
+<h2 id="Layer-Normalization"><a href="#Layer-Normalization" class="headerlink" title="Layer Normalization"></a>Layer Normalization</h2><p>假设输入数据的维度是：$x \in \mathbb{R}^{N \times C \times H \times W}$，Layer Normalization在对其求均值和方差时，将在$C$，$H$，$W$维度上求均值和标准差，保留$N$维度。</p>
+<script type="math/tex; mode=display">\mu _{n}(x)=\frac{1}{CHW}\sum_{c=1}^{C}\sum_{h=1}^{H}\sum_{w=1}^{W}x_{nchw} \\
+\sigma_n(x)=\sqrt{\frac{1}{CHW}\sum_{c=1}^{C}\sum_{h=1}^{H}\sum_{w=1}^{W}(x_{nchw}-\mu_n(x))^2 + \epsilon}</script><p>代码实现：<br><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"></span><br><span class="line">N, C, H, W = <span class="number">10</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">5</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">x = torch.rand(N, C, H, W) * <span class="number">10000</span></span><br><span class="line">ln = nn.LayerNorm(normalized_shape=[C, H, W], eps=<span class="number">0</span>, elementwise_affine=<span class="literal">False</span>)</span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">official_ln = ln(x)</span><br><span class="line"></span><br><span class="line"><span class="comment"># [N, C * H * W]</span></span><br><span class="line">x1 = x.reshape(N, -<span class="number">1</span>)</span><br><span class="line"><span class="comment"># [N, 1, 1, 1]</span></span><br><span class="line">mu = x1.mean(dim=<span class="number">1</span>).reshape(N, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">std = x1.std(dim=<span class="number">1</span>, unbiased=<span class="literal">False</span>).reshape(N, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">my_ln = (x - mu) / std</span><br><span class="line"></span><br><span class="line"><span class="comment"># 误差在1e-5量级</span></span><br><span class="line">diff = (official_ln - my_ln).<span class="built_in">sum</span>()</span><br><span class="line"><span class="built_in">print</span>(diff)</span><br></pre></td></tr></table></figure></p>
+<p>Layer Normalization的优势是不需要批训练，在单条数据内部就能归一化。而且由于Layer Normalization常用于NLP任务，实际的输入数据的维度一般是$x \in \mathbb{R}^{N \times H \times W}$，不过计算方式都是一样的。</p>
+<p><strong>为什么不在NLP任务中使用Batch Normalization?</strong></p>
+<p>假设有三个句子：为中华之崛起而读书，我爱中国，母爱最伟大。在NLP中使用Batch Normalization对不同样本同一特征的信息进行归一化没有意义（把“为”，“爱”，“母”归一化到同一分布有啥用？），而且舍弃了同一样本的不同维度信息之后（第一句中的“为”和“中”不再具有可比性，无法判断句子中哪个词重要性更高），会丧失序列信息。</p>
+<p>LLM时代有一些针对Layer Normalization改进的Normalization手段，如RMSNorm和DeepNorm，同时Normalization的位置也有一些区别，分为Pre-Norm和Post-Norm，此处不展开。</p>
+<h2 id="Instance-Normalization"><a href="#Instance-Normalization" class="headerlink" title="Instance Normalization"></a>Instance Normalization</h2><p>假设输入数据的维度是：$x \in \mathbb{R}^{N \times C \times H \times W}$，Instance Normalization在对其求均值和方差时，将在$H$，$W$维度上求均值和标准差，保留$N$、$C$维度。也就是说，它只在channel内部求均值和标准差。</p>
+<script type="math/tex; mode=display">\mu_{nc}=\frac{1}{HW}\sum_{h=1}^{H}\sum_{w=1}^{W}x_{nchw} \\
+\sigma_{nc}=\sqrt{\frac{1}{HW}\sum_{h=1}^{H}\sum_{w=1}^{W}(x_{nchw}-\mu_{nc}(x))^2+\epsilon}</script><p>代码实现：<br><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"></span><br><span class="line">N, C, H, W = <span class="number">10</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">5</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">x = torch.rand(N, C, H, W) * <span class="number">10000</span></span><br><span class="line">In = nn.InstanceNorm2d(num_features=C, eps=<span class="number">0</span>, affine=<span class="literal">False</span>, track_running_stats=<span class="literal">False</span>)</span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">official_in = In(x)</span><br><span class="line"></span><br><span class="line"><span class="comment"># [N * C, H * W]</span></span><br><span class="line">x1 = x.reshape(N * C, -<span class="number">1</span>)</span><br><span class="line"><span class="comment"># [N, C, 1, 1]</span></span><br><span class="line">mu = x1.mean(dim=<span class="number">1</span>).reshape(N, C, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">std = x1.std(dim=<span class="number">1</span>, unbiased=<span class="literal">False</span>).reshape(N, C, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">my_in = (x - mu) / std</span><br><span class="line"></span><br><span class="line"><span class="comment"># 误差在1e-5量级</span></span><br><span class="line">diff = (official_in - my_in).<span class="built_in">sum</span>()</span><br><span class="line"><span class="built_in">print</span>(diff)</span><br></pre></td></tr></table></figure></p>
+<p>Instance Normalization最初用于图像的风格迁移。在生成模型中，各个channel的均值和方差会影响最终生成图像的风格，因此可以把图像先在channel层面归一化，然后再用目标风格图片对应的channel的均值和标准差“去归一化”，以期获得目标图片的风格。</p>
+<p>Instance Normalization也是在单个样本内部进行，不依赖batch。</p>
+<h2 id="Group-Normalization"><a href="#Group-Normalization" class="headerlink" title="Group Normalization"></a>Group Normalization</h2><p>假设输入数据的维度是：$x \in \mathbb{R}^{N \times C \times H \times W}$，Group Normalization在对其求均值和方差时，把每一个样本在特征的channel维度上分为$G$组，每组将有$C/G$个channel。然后将这些channel中的元素求均值和标准差。各组channel用其对应的归一化参数独立地归一化。</p>
+<script type="math/tex; mode=display">\mu_{ng}=\frac{1}{(C/G)HW}\sum_{c=gC/G}^{(g+1)C/G}\sum_{h=1}^{H}\sum_{w=1}^{W}x_{nchw} \\
+\sigma_{ng}=\sqrt{\frac{1}{(C/G)HW}\sum_{c=gC/G}^{(g+1)C/G}\sum_{h=1}^{H}\sum_{w=1}^{W}(x_{nchw}-\mu_{ng}(x))^2+\epsilon}</script><p>代码实现：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"></span><br><span class="line">N, C, H, W = <span class="number">10</span>, <span class="number">20</span>, <span class="number">5</span>, <span class="number">5</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">x = torch.rand(N, C, H, W) * <span class="number">10000</span></span><br><span class="line"><span class="comment"># 分词G个group</span></span><br><span class="line">G = <span class="number">4</span></span><br><span class="line">gn = nn.GroupNorm(num_groups=G, num_channels=C, eps=<span class="number">0</span>, affine=<span class="literal">False</span>)</span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">official_gn = gn(x)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;Group Normalization X: <span class="subst">&#123;official_gn.shape&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># [N, G, C/G * H * W]</span></span><br><span class="line">x1 = x.reshape(N, G, -<span class="number">1</span>)</span><br><span class="line"><span class="comment"># [N, G, C/G * H * W]</span></span><br><span class="line">mu = x1.mean(dim=-<span class="number">1</span>).reshape(N, G , -<span class="number">1</span>)</span><br><span class="line">std = x1.std(dim=-<span class="number">1</span>).reshape(N, G, -<span class="number">1</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;mu shape: <span class="subst">&#123;mu.shape&#125;</span>&quot;</span>)</span><br><span class="line">x1_norm = (x1 - mu) / std</span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">my_gn = x1_norm.reshape(N, C, H, W)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;Group Normalization X: <span class="subst">&#123;my_gn.shape&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 误差在1e-5量级</span></span><br><span class="line">diff = (official_gn - my_gn).<span class="built_in">sum</span>()</span><br><span class="line"><span class="built_in">print</span>(diff)</span><br></pre></td></tr></table></figure>
+<p>Group Normalization是Layer Normalization和Instance Normalization的折中，也是独立于batch的。Group Normalization适用于占用显存比较大的任务，如图像分割。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>各Normalization方法的优缺点：</p>
+<ul>
+<li>Batch Normalization<ul>
+<li>优点<ul>
+<li>在CV领域取得了很好的效果</li>
+</ul>
+</li>
+<li>缺点<ul>
+<li>处理序列数据时（如文本），Batch Normalization可能不会表现很好</li>
+<li>对于较小的Batch size，Batch normalization可能会表现得不好，因为每个batch的统计特性会有较大波动</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Layer Normalization<ul>
+<li>优点<ul>
+<li>Layer Normalization是对每个样本进行归一化，因为它对batch size不敏感，这使得它在处理序列数据时表现得更好</li>
+<li>Layer Normalization在处理不同长度的序列时更加灵活</li>
+</ul>
+</li>
+<li>缺点<ul>
+<li>如果不同输入特征不属于相似的类别，比如颜色，那么Layer Normalization的处理可能会降低模型的表达能力</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Instance Normalization<ul>
+<li>优点<ul>
+<li>Instance Normalization是对每个样本的每个特征进行归一化，因此它可以捕捉到更多的细节信息</li>
+</ul>
+</li>
+<li>缺点<ul>
+<li>Instance Normalization可能会过度强调细节信息，忽视了更宏观的信息</li>
+<li>Instance Normalization的计算成本相比Batch Normalization和Layer Normalization更高</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Group Normalization<ul>
+<li>优点：<ul>
+<li>Group Normalization是Batch Normalization和Instance Normalization的折中方案，它在Batch的一个子集（即组）上进行归一化，这使得Group Normalization既可以捕获到Batch的统计特性，又可以捕获到样本的细节信息</li>
+<li>Group Normalization对Batch Size大小不敏感</li>
+</ul>
+</li>
+<li>缺点：<ul>
+<li>Group Normalization的性能取决于组的大小，需要通过实验来确定最优的组大小</li>
+<li>Group Normalization的计算成本比Batch Normalization和Layer Normalization要高</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>【参考文献】</p>
+<ol>
+<li><a href="https://zhuanlan.zhihu.com/p/86765356">各种Normalization</a></li>
+<li><a href="https://www.cnblogs.com/LXP-Never/p/11566064.html">深度学习中的Normalization方法</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>深度学习</category>
+      </categories>
+  </entry>
+  <entry>
     <title>常用优化器</title>
     <url>/2024/06/03/%E5%B8%B8%E7%94%A8%E4%BC%98%E5%8C%96%E5%99%A8/</url>
     <content><![CDATA[<p>优化器的作用是在深度学习反向传播的过程中，指引损失函数或者目标函数的各个参数往<strong>正确的方向</strong>更新<strong>合适的大小</strong>，使得更新后的参数让损失函数或目标函数的值不断逼近全局最小。</p>
