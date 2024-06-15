@@ -704,6 +704,39 @@ f(x) = \begin{cases}
 <li>Softmax函数计算时涉及指数运算，可能会增加计算复杂度</li>
 </ul>
 <p>一般来说，Softmax函数用于单标签的多分类问题，即每个样本只能属于一个类别。如果是多标签的多分类任务，即每个样本可能属于多个类别，那么使用Sigmoid激活函数更为合适，因为该激活函数将每个类别的输出独立地映射到<code>(0,1)</code>之间，从而允许每个样本属于多个类别。</p>
+<h2 id="GeLU激活函数"><a href="#GeLU激活函数" class="headerlink" title="GeLU激活函数"></a>GeLU激活函数</h2><p>GeLU全称是Gaussian Error Linear Unit，其在激活中引入了<strong>随机正则</strong>的思想，是一种对<strong>神经元输入</strong>的<strong>概率描述</strong>。GeLU直观上更符合自然认知，同时实验效果要比ReLU和ELU要好，在Transformer模型中表现优异，能够避免梯度消失问题。</p>
+<script type="math/tex; mode=display">GeLU(x) = x * P(X \leq x)=x * \Phi (x)</script><p>其中$\Phi(x)$是$x$的正态分布的累积函数。由于这个累积函数无法直接计算，研究者在研究过程中发现GeLU激活函数可以被近似地表示为：</p>
+<script type="math/tex; mode=display">GeLU(x) = 0.5x*(1 + tanh(\sqrt{\frac{2}{\pi}}(x+0.044715x^3)))</script><p>或者：</p>
+<script type="math/tex; mode=display">GeLU(x)=x * \sigma(1.702x)</script><p>该激活函数的图像为：</p>
+<img src="/2024/06/03/%E5%B8%B8%E7%94%A8%E6%BF%80%E6%B4%BB%E5%87%BD%E6%95%B0/gelu.png" class="" title="GeLU激活函数">
+<p>该激活函数的优点：</p>
+<ul>
+<li>对于比较大的输入（$x&gt;0$），GeLU基本上是线性输出，和ReLU类似</li>
+<li>GeLU函数是处处连续，光滑可导的，在负值区域不再全为0，解决了Dead ReLU问题</li>
+<li>GeLU具有自归一化的性质，这意味着它在训练过程中可以帮助稳定神经网络的梯度，有助于加速收敛</li>
+</ul>
+<p>该激活函数的缺点：</p>
+<ul>
+<li>GeLU的计算要比传统的ReLU激活函数要复杂，虽然可以通过近似方法来简化计算，但是仍然增加了计算成本</li>
+<li>在某些情况下，GeLU可能会增加模型的内存需求</li>
+</ul>
+<h2 id="Swish激活函数"><a href="#Swish激活函数" class="headerlink" title="Swish激活函数"></a>Swish激活函数</h2><p>Swish激活函数的计算方式如下：</p>
+<script type="math/tex; mode=display">Swish(x) = x * \sigma (x)</script><p>该激活函数的图像为：</p>
+<img src="/2024/06/03/%E5%B8%B8%E7%94%A8%E6%BF%80%E6%B4%BB%E5%87%BD%E6%95%B0/swish.png" class="" title="Swish激活函数">
+<p>该激活函数的优点：</p>
+<ul>
+<li>Swish激活函数是一个非单调函数，它能够帮助模型捕获更复杂的数据特征，提升模型性能</li>
+<li>Swish函数及其导数都是平滑的，有助于提高梯度下降的效率</li>
+</ul>
+<p>该激活函数的缺点：</p>
+<ul>
+<li>Swish的计算成本要比ReLU等简单激活函数要高</li>
+</ul>
+<p>【参考文献】</p>
+<ol>
+<li><a href="https://mingchao.wang/FLPUbCkI/#61-intuition">激活函数</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/643829565#ref_7">大模型基础知识</a></li>
+</ol>
 ]]></content>
       <categories>
         <category>深度学习</category>
