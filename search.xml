@@ -274,7 +274,7 @@ PE_{(pos, 2i+1)}=cos(pos / 10000^{2i / d_{model}})</script><p>其中$pos$是位�
 \sigma_n(x)=\sqrt{\frac{1}{CHW}\sum_{c=1}^{C}\sum_{h=1}^{H}\sum_{w=1}^{W}(x_{nchw}-\mu_n(x))^2 + \epsilon}</script><p>代码实现：<br><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"><span class="keyword">from</span> torch <span class="keyword">import</span> nn</span><br><span class="line"></span><br><span class="line">N, C, H, W = <span class="number">10</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">5</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">x = torch.rand(N, C, H, W) * <span class="number">10000</span></span><br><span class="line">ln = nn.LayerNorm(normalized_shape=[C, H, W], eps=<span class="number">0</span>, elementwise_affine=<span class="literal">False</span>)</span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">official_ln = ln(x)</span><br><span class="line"></span><br><span class="line"><span class="comment"># [N, C * H * W]</span></span><br><span class="line">x1 = x.reshape(N, -<span class="number">1</span>)</span><br><span class="line"><span class="comment"># [N, 1, 1, 1]</span></span><br><span class="line">mu = x1.mean(dim=<span class="number">1</span>).reshape(N, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line">std = x1.std(dim=<span class="number">1</span>, unbiased=<span class="literal">False</span>).reshape(N, <span class="number">1</span>, <span class="number">1</span>, <span class="number">1</span>)</span><br><span class="line"><span class="comment"># [N, C, H, W]</span></span><br><span class="line">my_ln = (x - mu) / std</span><br><span class="line"></span><br><span class="line"><span class="comment"># 误差在1e-5量级</span></span><br><span class="line">diff = (official_ln - my_ln).<span class="built_in">sum</span>()</span><br><span class="line"><span class="built_in">print</span>(diff)</span><br></pre></td></tr></table></figure></p>
 <p>Layer Normalization的优势是不需要批训练，在单条数据内部就能归一化。而且由于Layer Normalization常用于NLP任务，实际的输入数据的维度一般是$x \in \mathbb{R}^{N \times H \times W}$，不过计算方式都是一样的。</p>
 <p><strong>为什么不在NLP任务中使用Batch Normalization?</strong></p>
-<p>假设有三个句子：为中华之崛起而读书，我爱中国，母爱最伟大。在NLP中使用Batch Normalization对不同样本同一特征的信息进行归一化没有意义（把“为”，“爱”，“母”归一化到同一分布有啥用？），而且舍弃了同一样本的不同维度信息之后（第一句中的“为”和“中”不再具有可比性，无法判断句子中哪个词重要性更高），会丧失序列信息。</p>
+<p>假设有三个句子：为中华之崛起而读书，我爱中国，母爱最伟大。在NLP中使用Batch Normalization对不同样本同一特征的信息进行归一化没有意义（把“为”，“我”，“母”归一化到同一分布有啥用？），而且舍弃了同一样本的不同维度信息之后（第一句中的“为”和“中”不再具有可比性，无法判断句子中哪个词重要性更高），会丧失序列信息。</p>
 <p>LLM时代有一些针对Layer Normalization改进的Normalization手段，如RMSNorm和DeepNorm，同时Normalization的位置也有一些区别，分为Pre-Norm和Post-Norm，此处不展开。</p>
 <h2 id="Instance-Normalization"><a href="#Instance-Normalization" class="headerlink" title="Instance Normalization"></a>Instance Normalization</h2><p>假设输入数据的维度是：$x \in \mathbb{R}^{N \times C \times H \times W}$，Instance Normalization在对其求均值和方差时，将在$H$，$W$维度上求均值和标准差，保留$N$、$C$维度。也就是说，它只在channel内部求均值和标准差。</p>
 <script type="math/tex; mode=display">\mu_{nc}=\frac{1}{HW}\sum_{h=1}^{H}\sum_{w=1}^{W}x_{nchw} \\
@@ -707,6 +707,28 @@ f(x) = \begin{cases}
 ]]></content>
       <categories>
         <category>深度学习</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>LLM时代的Normalization</title>
+    <url>/2024/06/15/LLM%E6%97%B6%E4%BB%A3%E7%9A%84Normalization/</url>
+    <content><![CDATA[<p>在<a href="https://suhejian.github.io/2024/06/05/%E5%B8%B8%E7%94%A8Normalization/">常用Normalization</a>这篇文章中，我们介绍了<code>Batch Normalization</code>，<code>Layer Normalization</code>，<code>Instance Normalization</code>和<code>Group Normalization</code>等常用的Normalization手段。在大型语言模型（Large Language Model）时代，研究者们对<code>Layer Normalization</code>做了一些改进。</p>
+<h2 id="Norm方法"><a href="#Norm方法" class="headerlink" title="Norm方法"></a>Norm方法</h2><h3 id="LayerNorm"><a href="#LayerNorm" class="headerlink" title="LayerNorm"></a>LayerNorm</h3><p><code>LayerNorm</code>使用均值和方差来重新调整数据分布，其公式如下：</p>
+<script type="math/tex; mode=display">\frac{\mathbf{x}-\mu}{\sqrt{\sigma}}.\gamma + \beta \\ \mu = \frac{1}{d}\sum_{i=1}^{d}x_i \\ \sigma = \sqrt{\frac{1}{d}\sum_{i=1}^{d}(x_i - \mu)^2}</script><h3 id="RMSNorm"><a href="#RMSNorm" class="headerlink" title="RMSNorm"></a>RMSNorm</h3><p><code>RMSNorm</code>全称是Root Mean Square Layer Normalization。<code>RMSNorm</code>通过实验证明<code>re-center</code>操作并不重要，移除了<code>LayerNorm</code>中的均值项，可以看作<code>LayerNorm</code>在均值为0时的一个特例。它的计算公式如下：</p>
+<script type="math/tex; mode=display">\frac{\mathbf{x}}{RMS(\mathbf{x})}.\gamma \\ RMS(\mathbf{x})=\sqrt{\frac{1}{d}\sum_{i=1}^{d}x_i^2}</script><p>由于不需要计算均值，使用<code>RMSNorm</code>提高了训练速度，作者认为其相比<code>LayerNorm</code>可以在各个模型上减少约7%-64%的计算时间。同时一些采用了<code>RMSNorm</code>的模型也展示了其在性能上的优越性。</p>
+<h3 id="DeepNorm"><a href="#DeepNorm" class="headerlink" title="DeepNorm"></a>DeepNorm</h3><p>为了进一步稳定深度Transformer的训练，微软推出了<code>DeepNorm</code>，其不仅用作标准化，还作为残差连接。据论文所述，有了<code>DeepNorm</code>的帮助我们可以训练1000层的Transformer模型，同时保持稳定性和高性能。其计算公式如下：</p>
+<script type="math/tex; mode=display">LayerNorm(\alpha . \mathbf{x} + Sublayer(\mathbf{x}))</script><h2 id="Norm位置"><a href="#Norm位置" class="headerlink" title="Norm位置"></a>Norm位置</h2><h3 id="Post-Norm"><a href="#Post-Norm" class="headerlink" title="Post Norm"></a>Post Norm</h3><p>原始的Transformer论文使用的就是<code>Post Norm</code>，其使用方式如下：</p>
+<script type="math/tex; mode=display">Norm(\mathbf{x} + Sublayer(\mathbf{x}))</script><p><code>Post Norm</code>结构的最终效果是要好于<code>Pre Norm</code>的，只不过<code>Post Norm</code>要达到自己的最优效果，需要加Warmup等训练技巧，如果和<code>Pre Norm</code>用一样的训练配置则效果不如<code>Pre Norm</code>。</p>
+<h3 id="Pre-Norm"><a href="#Pre-Norm" class="headerlink" title="Pre Norm"></a>Pre Norm</h3><p>同一设置下，<code>Pre Norm</code>结构往往更容易训练，但是最终效果通常不如<code>Post Norm</code>。其使用方式如下：</p>
+<script type="math/tex; mode=display">\mathbf{x} + Sublayer(Norm(\mathbf{x}))</script><p><code>Pre Norm</code>结构无形地增加了模型的<strong>宽度</strong>而降低了模型的<strong>深度</strong>，而在深度学习中深度通常比宽度更重要。也就是说<code>Pre Norm</code>的深度有“水分”，一个$L$层的<code>Pre Norm</code>模型其实际等效层数不如$L$层的<code>Post Norm</code>模型，层数少就会导致效果变差。</p>
+<h3 id="Sandwich-Norm"><a href="#Sandwich-Norm" class="headerlink" title="Sandwich Norm"></a>Sandwich Norm</h3><p><code>Sandwich Norm</code>是结合了<code>Pre Norm</code>和<code>Post Norm</code>的归一化方式，在一定程度上平衡了它们各自的优势，其使用方式如下：</p>
+<script type="math/tex; mode=display">\mathbf{x} + Norm(Sublayer(Norm(\mathbf{x})))</script><p>【参考文献】</p>
+<ol>
+<li><a href="https://kexue.fm/archives/9009">苏剑林-为什么Pre Norm的效果不如Post Norm</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>LLM</category>
       </categories>
   </entry>
 </search>
