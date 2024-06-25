@@ -780,9 +780,42 @@ f(x) = \begin{cases}
 <h3 id="预训练任务"><a href="#预训练任务" class="headerlink" title="预训练任务"></a>预训练任务</h3><p>有两个训练任务：</p>
 <ul>
 <li><code>masked language model</code><br>  具体来说，输入文本随机mask一些tokens（15%），然后基于上下文预测出这些被mask掉的tokens。此外，由于fine-tuning阶段并没有<code>[MASK]</code>这个token，为了弥补预训练和微调之间的不匹配，随机mask的token并不总是用<code>[MASK]</code>标记来表示。<br>  实际训练时，如果某个位置的token要被mask掉，有80%的可能性用<code>[MASK]</code>标记替代，有10%的可能性<strong>随机挑选</strong>一个token替代，还有10%的可能性<strong>保持原始token不变</strong>。</li>
-<li><code>next sentence prediction</code><br>  具体来说，给定一个<strong>文本对</strong>，预测第二个句子是否是第一个句子的下一句。实际训练挑选句子$A$和句子$B$时，有50%的可能性$B$确实是跟在$A$后面的，标记为<code>IsNext</code>；还有50%的可能性$B$是从语料中随机挑选的句子，标记为<code>NotNext</code><h3 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h3>BERT的模型架构采用了多层的、双向的Transformer encoder，其代码实现可以参考<a href="http://nlp.seas.harvard.edu/2018/04/03/attention.html">The Annotated Transformer</a>，这是哈佛大学关于Transformer的教程。也可以看这篇<a href="https://blog.csdn.net/shjhiahia/article/details/139130926">Transformer论文精读</a>。<br>如果用$L$表示Transformer blocks的数目，$H$表示隐藏层的维度，$A$表示多头注意力中<strong>head</strong>的数目，那么这是模型的参数：<br>|  | BERT-BASE | BERT-Large |<br>|—|—|—|<br>| L | 12 | 24 |<br>| H | 768 | 1024 |<br>| A | 12 | 16 |<br>| Param | 110M | 340M |</li>
+<li><code>next sentence prediction</code><br>  具体来说，给定一个<strong>文本对</strong>，预测第二个句子是否是第一个句子的下一句。实际训练挑选句子$A$和句子$B$时，有50%的可能性$B$确实是跟在$A$后面的，标记为<code>IsNext</code>；还有50%的可能性$B$是从语料中随机挑选的句子，标记为<code>NotNext</code><h3 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h3>BERT的模型架构采用了多层的、双向的Transformer encoder，其代码实现可以参考<a href="http://nlp.seas.harvard.edu/2018/04/03/attention.html">The Annotated Transformer</a>，这是哈佛大学关于Transformer的教程。也可以看这篇<a href="https://blog.csdn.net/shjhiahia/article/details/139130926">Transformer论文精读</a>。<br>如果用$L$表示Transformer blocks的数目，$H$表示隐藏层的维度，$A$表示多头注意力中<strong>head</strong>的数目，那么这是模型的参数：</li>
 </ul>
-<p>不过由于采用了<code>Next Sentence Prediction</code>这个预训练任务，BERT在处理输入时和Transformer略有不同。<br><img src="https://img-blog.csdnimg.cn/direct/7438fc17d34b40eab68b6f1b08ce69af.png" alt="BERT Input Embedding"><br>其中<code>[CLS]</code>是每个句子的第一个token，该token对应的最终隐藏状态可以看作<strong>序列表示</strong>，可以用于分类任务；<code>[SEP]</code>用于分割句子，以区分两个不同的句子。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>BERT-BASE</th>
+<th>BERT-Large</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L</td>
+<td>12</td>
+<td>24</td>
+</tr>
+<tr>
+<td>H</td>
+<td>768</td>
+<td>1024</td>
+</tr>
+<tr>
+<td>A</td>
+<td>12</td>
+<td>16</td>
+</tr>
+<tr>
+<td>Param</td>
+<td>110M</td>
+<td>340M</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>不过由于采用了<code>Next Sentence Prediction</code>这个预训练任务，BERT在处理输入时和Transformer略有不同。<br><img src="/2024/06/17/%E5%9F%BA%E4%BA%8ETransformer%E7%9A%84%E7%BB%8F%E5%85%B8%E6%A8%A1%E5%9E%8B/embedding.png" class="" title="BERT Input Embedding"><br>其中<code>[CLS]</code>是每个句子的第一个token，该token对应的最终隐藏状态可以看作<strong>序列表示</strong>，可以用于分类任务；<code>[SEP]</code>用于分割句子，以区分两个不同的句子。</p>
 <h3 id="训练语料"><a href="#训练语料" class="headerlink" title="训练语料"></a>训练语料</h3><p>预训练的语料来源有：</p>
 <ul>
 <li><code>BooksCorpus</code>：800M words</li>
@@ -944,6 +977,46 @@ f(x) = \begin{cases}
 ]]></content>
       <categories>
         <category>深度学习</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>常用PEFT技术</title>
+    <url>/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/</url>
+    <content><![CDATA[<p>在大模型时代，全参微调的成本过于高昂，而且会带来<strong>灾难性遗忘问题</strong>。参数高效微调（Parameter-Efficient Fine-Tuning，PEFT）技术应运而生，固定住大部分预训练参数，仅微调少量或者额外的模型参数，从而大大降低LLM的训练成本。</p>
+<p>PEFT技术的主要做法包括Adapter Tuning、Prefix Tuning、Prompt Tuning和LoRA。Adapter Tuning通过设计<strong>adapter结构</strong>，只对新增的adapter结构进行微调，保证训练的高效性；Prefix Tuning是在输入token之前构造和任务相关的<strong>virtual token</strong>，即连续的embedding向量，训练时固定Transformer部分的参数，只更新和下游任务相关的前缀向量（prefix embedding）；Prompt Tuning则是在输入中加入<strong>prompt tokens</strong>进行微调，也就是通过自然语言指令让模型完成相应的任务；LoRA固定住预训练权重，额外引入了可训练的<strong>低秩分解矩阵</strong>，仅训练低秩矩阵那部分参数。</p>
+<h2 id="Adapter-Tuning"><a href="#Adapter-Tuning" class="headerlink" title="Adapter Tuning"></a>Adapter Tuning</h2><p><a href="https://arxiv.org/pdf/1902.00751">Parameter-Efficient Transfer Learning for NLP</a>提出了针对BERT的PEFT微调方式，拉开了PEFT研究的序幕。谷歌的研究者指出，在面对特定的下游任务，全参微调过于低效；固定预训练模型的部分层，只微调接近下游任务的那几层参数又难以达到较好的效果。</p>
+<p>他们在Transformer结构中设计了如下图所示的Adapter结构，在训练时只对新增的Adapter结构进行微调，其它模块的参数是保持不变的。</p>
+<img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/adapter.png" class="" title="adapter">
+<p>除此之外，为了尽可能少的引入更多参数，同时为了保证训练的高效性，他们将Adapter设计为这样的结构：首先是一个<code>down-project</code>层将高维特征映射到低维特征，随后会经过一个非线性层，最后再用一个<code>up-project</code>层将低维特征映射回原来的高维特征。还设计了一个<code>skip-connection</code>结构，确保在最差情况下能够退化为原始结构。</p>
+<p>从实验结果来看，该方法相比于原来预训练模型的参数量只额外增加了3.6%的参数规模，取得了和全参微调接近的效果（GLUE指标在0.4%以内）。</p>
+<h2 id="Prefix-Tuning"><a href="#Prefix-Tuning" class="headerlink" title="Prefix Tuning"></a>Prefix Tuning</h2><p><a href="https://arxiv.org/pdf/2101.00190">Prefix-Tuning: Optimizing Continuous Prompts for Generation</a>由斯坦福研究人员提出，在输入token之前构造一段任务相关的virtual tokens，训练的时候只更新prefix部分的参数，预训练模型的参数是固定的。此外，为了防止直接更新Prefix的参数导致训练不稳定的情况，他们在Prefix层前面添加了MLP结构，训练完成之后，只保留Prefix的参数。</p>
+<img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/prefix.png" class="" title="Prefix">
+<p>该方法其实和构造Prompt类似，只不过Prompt是人为构造的显式提示，而且无法更新参数，Prefix则是可以学习的隐式提示。</p>
+<p>实验结果证明了Prefix Tuning的方式可以取得不错的效果。</p>
+<h2 id="Prompt-Tuning"><a href="#Prompt-Tuning" class="headerlink" title="Prompt Tuning"></a>Prompt Tuning</h2><p><a href="https://arxiv.org/pdf/2104.08691">The Power of Scale for Parameter-Efficient Prompt Tuning</a>这篇文章表示只要模型规模足够大，简单加入Prompt tokens进行微调，就能取得很好的效果。</p>
+<p>该方法可以看作是Prefix Tuning的简化版本，只对输入层添加的prompt tokens embedding进行微调，而Prefix Tuning是对virtual token对应的上游层全部进行微调。因此Prompt Tuning的微调参数量数量级要更小，且不需要修改原始模型结构。</p>
+<img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/prompt.png" class="" title="Prompt">
+<p>这篇文章表明随着预训练模型参数的增加，即使是最简单的设置也能达到很好的效果。</p>
+<h2 id="LoRA"><a href="#LoRA" class="headerlink" title="LoRA"></a>LoRA</h2><p>LoRA全称是LoRA: Low-Rank Adaptation of Large Language Models，<a href="https://arxiv.org/pdf/2106.09685">原文链接</a>。</p>
+<p>微软和CMU的研究者指出，现有的一些PEFT方法存在这样的问题：</p>
+<ul>
+<li>由于增加了模型的深度，从而额外增加了模型推理的延时，如Adapter方法</li>
+<li>Prompt较难训练，同时减少了模型的可用序列长度，如Prompt Tuning、Prefix Tuning和P-Tuning方法</li>
+<li>往往效率和质量不可兼得，效果比全参微调要差</li>
+</ul>
+<p>有研究者对语音模型的参数进行研究发现，语言模型的参数虽然很多，但是其中起到关键作用的还是低秩的本质维度（<code>low instrisic dimension</code>）。受此观点的启发，微软提出了低秩适配（Low-Rank Adaption，LoRA）技术来微调大型语言模型。</p>
+<p>LoRA设计了如下所示的结构，冻结预训练模型的权重参数，然后在每个Transformer块引入$A$和$B$这样两个低秩矩阵模块，去模拟全参微调的过程。</p>
+<img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/lora.png" class="" title="LoRA">
+<p>在面对不同的下游任务时，仅需训练参数量很少的低秩矩阵，而<strong>预训练权重</strong>可以在这些任务之间<strong>共享</strong>；训练好的低秩矩阵可以合并到预训练权重中，多分支结构变成单分支结构，这样就<strong>不会增加额外的推理延时</strong>。</p>
+<p>最重要的是，由于$\nabla W=BA$的参数量远小于$W$，因此相比于全参微调，LoRA显著降低了优化器状态这部分对显存资源的需求。对于梯度部分，LoRA在严格意义上并不能降低其对于显存资源的需求，甚至比起全参微调来说计算量还更大了，只不过中间状态量所占用的显存会被释放掉，降低了最终存储的需求。</p>
+<p>【参考文献】</p>
+<ol>
+<li><a href="https://ningshixian.github.io/2023/05/18/2023-05-18-PEFT%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/">PEFT技术简介</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/646831196">LoRA原理</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>LLM</category>
       </categories>
   </entry>
 </search>

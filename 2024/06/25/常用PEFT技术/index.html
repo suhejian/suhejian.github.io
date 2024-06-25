@@ -48,19 +48,24 @@
   };
 </script>
 
-  <meta name="description" content="简要介绍了混合精度的概念，以此为基础评估了训练阶段和推理阶段各需要占用多少显存。针对ZeRO技术和KV Cache技术这里只是一笔带过，后续会详细介绍。">
+  <meta name="description" content="简要介绍了四种主流的PEFT技术，包括Adapter Tuning，Prefix Tuning，Prompt Tuning和LoRA，这些技术降低了LLM的训练门槛，让普通人也能微调大模型。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="混合精度和显存计算">
-<meta property="og:url" content="https://suhejian.github.io/2024/06/17/%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E5%92%8C%E6%98%BE%E5%AD%98%E8%AE%A1%E7%AE%97/index.html">
+<meta property="og:title" content="常用PEFT技术">
+<meta property="og:url" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/index.html">
 <meta property="og:site_name" content="摸鱼日记">
-<meta property="og:description" content="简要介绍了混合精度的概念，以此为基础评估了训练阶段和推理阶段各需要占用多少显存。针对ZeRO技术和KV Cache技术这里只是一笔带过，后续会详细介绍。">
+<meta property="og:description" content="简要介绍了四种主流的PEFT技术，包括Adapter Tuning，Prefix Tuning，Prompt Tuning和LoRA，这些技术降低了LLM的训练门槛，让普通人也能微调大模型。">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2024-06-17T12:35:40.000Z">
-<meta property="article:modified_time" content="2024-06-17T14:10:23.220Z">
+<meta property="og:image" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/adapter.png">
+<meta property="og:image" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/prefix.png">
+<meta property="og:image" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/prompt.png">
+<meta property="og:image" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/lora.png">
+<meta property="article:published_time" content="2024-06-25T13:14:00.000Z">
+<meta property="article:modified_time" content="2024-06-25T14:35:25.938Z">
 <meta property="article:author" content="suhejian">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/adapter.png">
 
-<link rel="canonical" href="https://suhejian.github.io/2024/06/17/%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E5%92%8C%E6%98%BE%E5%AD%98%E8%AE%A1%E7%AE%97/">
+<link rel="canonical" href="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/">
 
 
 <script id="page-configurations">
@@ -72,7 +77,7 @@
   };
 </script>
 
-  <title>混合精度和显存计算 | 摸鱼日记</title>
+  <title>常用PEFT技术 | 摸鱼日记</title>
   
 
 
@@ -202,7 +207,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://suhejian.github.io/2024/06/17/%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E5%92%8C%E6%98%BE%E5%AD%98%E8%AE%A1%E7%AE%97/">
+    <link itemprop="mainEntityOfPage" href="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -215,7 +220,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          混合精度和显存计算
+          常用PEFT技术
         </h1>
 
         <div class="post-meta">
@@ -226,7 +231,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2024-06-17 20:35:40 / 修改时间：22:10:23" itemprop="dateCreated datePublished" datetime="2024-06-17T20:35:40+08:00">2024-06-17</time>
+              <time title="创建时间：2024-06-25 21:14:00 / 修改时间：22:35:25" itemprop="dateCreated datePublished" datetime="2024-06-25T21:14:00+08:00">2024-06-25</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -234,14 +239,14 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index">
-                    <span itemprop="name">深度学习</span>
+                  <a href="/categories/LLM/" itemprop="url" rel="index">
+                    <span itemprop="name">LLM</span>
                   </a>
                 </span>
             </span>
 
           
-            <div class="post-description">简要介绍了混合精度的概念，以此为基础评估了训练阶段和推理阶段各需要占用多少显存。针对ZeRO技术和KV Cache技术这里只是一笔带过，后续会详细介绍。</div>
+            <div class="post-description">简要介绍了四种主流的PEFT技术，包括Adapter Tuning，Prefix Tuning，Prompt Tuning和LoRA，这些技术降低了LLM的训练门槛，让普通人也能微调大模型。</div>
 
         </div>
       </header>
@@ -252,115 +257,37 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h3 id="混合精度计算"><a href="#混合精度计算" class="headerlink" title="混合精度计算"></a>混合精度计算</h3><p>在深度学习中，常用<strong>混合精度计算</strong>来加速模型训练。举例来说，线性层或者卷积层在使用<code>float16</code>计算时速度要比使用<code>float32</code>快得多，而且这些算子对精度要求没有那么高；减法操作等算子则对精度有较高要求，一般需要<code>float32</code>精度。PyTorch提供自动混合精度（<code>torch.cuda.amp</code>）方法，尝试将每个操作和适当的数值类型匹配，以此减少模型的内存占用和训练时长。</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>数据类型</th>
-<th>符号占位</th>
-<th>指数占位</th>
-<th>尾数占位</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>fp16</code></td>
-<td>1</td>
-<td>5</td>
-<td>10</td>
-</tr>
-<tr>
-<td><code>bf16</code></td>
-<td>1</td>
-<td>8</td>
-<td>7</td>
-</tr>
-<tr>
-<td><code>fp32</code></td>
-<td>1</td>
-<td>8</td>
-<td>23</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>一般来说有以上三种浮点数类型，其中指数占位代表了浮点数表示的<strong>范围</strong>，尾数占位代表了浮点数表示的<strong>精度</strong>。</p>
-<p>当然，使用混合精度计算也不是没有缺点，需要搭配一些优化策略：</p>
+        <p>在大模型时代，全参微调的成本过于高昂，而且会带来<strong>灾难性遗忘问题</strong>。参数高效微调（Parameter-Efficient Fine-Tuning，PEFT）技术应运而生，固定住大部分预训练参数，仅微调少量或者额外的模型参数，从而大大降低LLM的训练成本。</p>
+<p>PEFT技术的主要做法包括Adapter Tuning、Prefix Tuning、Prompt Tuning和LoRA。Adapter Tuning通过设计<strong>adapter结构</strong>，只对新增的adapter结构进行微调，保证训练的高效性；Prefix Tuning是在输入token之前构造和任务相关的<strong>virtual token</strong>，即连续的embedding向量，训练时固定Transformer部分的参数，只更新和下游任务相关的前缀向量（prefix embedding）；Prompt Tuning则是在输入中加入<strong>prompt tokens</strong>进行微调，也就是通过自然语言指令让模型完成相应的任务；LoRA固定住预训练权重，额外引入了可训练的<strong>低秩分解矩阵</strong>，仅训练低秩矩阵那部分参数。</p>
+<h2 id="Adapter-Tuning"><a href="#Adapter-Tuning" class="headerlink" title="Adapter Tuning"></a>Adapter Tuning</h2><p><a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1902.00751">Parameter-Efficient Transfer Learning for NLP</a>提出了针对BERT的PEFT微调方式，拉开了PEFT研究的序幕。谷歌的研究者指出，在面对特定的下游任务，全参微调过于低效；固定预训练模型的部分层，只微调接近下游任务的那几层参数又难以达到较好的效果。</p>
+<p>他们在Transformer结构中设计了如下图所示的Adapter结构，在训练时只对新增的Adapter结构进行微调，其它模块的参数是保持不变的。</p>
+<img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/adapter.png" class="" title="adapter">
+<p>除此之外，为了尽可能少的引入更多参数，同时为了保证训练的高效性，他们将Adapter设计为这样的结构：首先是一个<code>down-project</code>层将高维特征映射到低维特征，随后会经过一个非线性层，最后再用一个<code>up-project</code>层将低维特征映射回原来的高维特征。还设计了一个<code>skip-connection</code>结构，确保在最差情况下能够退化为原始结构。</p>
+<p>从实验结果来看，该方法相比于原来预训练模型的参数量只额外增加了3.6%的参数规模，取得了和全参微调接近的效果（GLUE指标在0.4%以内）。</p>
+<h2 id="Prefix-Tuning"><a href="#Prefix-Tuning" class="headerlink" title="Prefix Tuning"></a>Prefix Tuning</h2><p><a target="_blank" rel="noopener" href="https://arxiv.org/pdf/2101.00190">Prefix-Tuning: Optimizing Continuous Prompts for Generation</a>由斯坦福研究人员提出，在输入token之前构造一段任务相关的virtual tokens，训练的时候只更新prefix部分的参数，预训练模型的参数是固定的。此外，为了防止直接更新Prefix的参数导致训练不稳定的情况，他们在Prefix层前面添加了MLP结构，训练完成之后，只保留Prefix的参数。</p>
+<img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/prefix.png" class="" title="Prefix">
+<p>该方法其实和构造Prompt类似，只不过Prompt是人为构造的显式提示，而且无法更新参数，Prefix则是可以学习的隐式提示。</p>
+<p>实验结果证明了Prefix Tuning的方式可以取得不错的效果。</p>
+<h2 id="Prompt-Tuning"><a href="#Prompt-Tuning" class="headerlink" title="Prompt Tuning"></a>Prompt Tuning</h2><p><a target="_blank" rel="noopener" href="https://arxiv.org/pdf/2104.08691">The Power of Scale for Parameter-Efficient Prompt Tuning</a>这篇文章表示只要模型规模足够大，简单加入Prompt tokens进行微调，就能取得很好的效果。</p>
+<p>该方法可以看作是Prefix Tuning的简化版本，只对输入层添加的prompt tokens embedding进行微调，而Prefix Tuning是对virtual token对应的上游层全部进行微调。因此Prompt Tuning的微调参数量数量级要更小，且不需要修改原始模型结构。</p>
+<img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/prompt.png" class="" title="Prompt">
+<p>这篇文章表明随着预训练模型参数的增加，即使是最简单的设置也能达到很好的效果。</p>
+<h2 id="LoRA"><a href="#LoRA" class="headerlink" title="LoRA"></a>LoRA</h2><p>LoRA全称是LoRA: Low-Rank Adaptation of Large Language Models，<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/2106.09685">原文链接</a>。</p>
+<p>微软和CMU的研究者指出，现有的一些PEFT方法存在这样的问题：</p>
 <ul>
-<li>梯度下溢<br>  在训练过程中，特别是在使用低精度浮点数（如<code>float16</code>）时，梯度可能会变得非常小，导致数值不稳定性，这种现象称为梯度下溢</li>
-<li>梯度缩放<br>  对于使用<code>float16</code>梯度的网络，梯度缩放在反向传播之前放大梯度，减少梯度下溢的问题，从而帮助网络更好地收敛</li>
+<li>由于增加了模型的深度，从而额外增加了模型推理的延时，如Adapter方法</li>
+<li>Prompt较难训练，同时减少了模型的可用序列长度，如Prompt Tuning、Prefix Tuning和P-Tuning方法</li>
+<li>往往效率和质量不可兼得，效果比全参微调要差</li>
 </ul>
-<p>混合精度计算的优缺点：</p>
-<ul>
-<li>优点<ul>
-<li>混合精度训练可以提高训练速度，减少内存使用</li>
-<li>同时使用<code>fp32</code>进行关键的计算，以保证准确性</li>
-</ul>
-</li>
-<li>缺点<ul>
-<li>混合精度训练可能会导致数值不稳定，特别是在模型梯度非常小或非常大的时候，还需要额外的校准步骤来确保<code>fp16</code>计算的准确性</li>
-</ul>
-</li>
-</ul>
-<h3 id="训练显存"><a href="#训练显存" class="headerlink" title="训练显存"></a>训练显存</h3><p>在模型训练时，除了存储模型权重需要占用显存，存储优化器状态、计算梯度也需要占用显存。所以训练占用的显存要比推理时更多。</p>
-<h4 id="模型权重"><a href="#模型权重" class="headerlink" title="模型权重"></a>模型权重</h4><p>如果全部使用<code>fp32</code>精度的浮点数类型，那么显存占用和模型参数存在这样的关系：</p>
-<script type="math/tex; mode=display">Memory_{model}=(4 \, bytes / param) * (No.params)</script><p>如果全部使用<code>fp16</code>精度的浮点数类型，那么显存占用和模型参数存在这样的关系：</p>
-<script type="math/tex; mode=display">Memory_{model}=(2 \, bytes / param) * (No.params)</script><p>而如果使用混合精度，显存占用和模型参数的关系如下：</p>
-<script type="math/tex; mode=display">Memory_{model}=(2 \, bytes / param) * (No.params)</script><p>还要再加上<strong>优化器状态</strong>中的<code>fp32</code>版本的模型参数，只不过不放在这里计算，放到优化器状态中计算。</p>
-<h4 id="梯度"><a href="#梯度" class="headerlink" title="梯度"></a>梯度</h4><p>梯度既可以使用<code>fp32</code>类型也可以使用<code>fp16</code>类型，不过一般和模型的数据类型一致。</p>
-<p>所以如果是<code>fp32</code>类型，显存占用关系如下：</p>
-<script type="math/tex; mode=display">Memory_{gradients} = (4 \, bytes / param) * (No.params)</script><p>如果是<code>fp16</code>类型，显存占用关系如下：</p>
-<script type="math/tex; mode=display">Memory_{gradients} = (2 \, bytes / param) * (No.params)</script><h4 id="优化器状态"><a href="#优化器状态" class="headerlink" title="优化器状态"></a>优化器状态</h4><p>在优化器更新模型参数时，会使用<code>float32</code>类型的优化器状态、<code>float32</code>类型的梯度和<code>float32</code>类型的模型参数来更新。</p>
-<p>选择不同的优化器，对显存的占用是不一样的：</p>
-<ul>
-<li><p>AdamW：$Memory_{optimizer} = (16 \, bytes / param) * (No.params)$</p>
-<ul>
-<li><code>fp32</code>版本的模型参数：$4 \, bytes / param$</li>
-<li><code>fp32</code>版本的梯度：$4 \, bytes / param$</li>
-<li>一阶动量：$4 \, bytes / param$</li>
-<li>二阶动量：$4 \, bytes / param$</li>
-</ul>
-</li>
-<li><p>8-bit的优化器，如<code>bitsandbytes</code>：$Memory_{optimizer} = (10 \, bytes / param) * (No.params)$</p>
-<ul>
-<li><code>fp32</code>版本的模型参数：$4 \, bytes / param$</li>
-<li><code>fp32</code>版本的梯度：$4 \, bytes / param$</li>
-<li>一阶动量：$1 \, bytes / param$</li>
-<li>二阶动量：$1 \, bytes / param$</li>
-</ul>
-</li>
-<li><p>带动量的SGD优化器：$Memory_{optimizer} = (12 \, bytes / param) * (No.params)$</p>
-<ul>
-<li><code>fp32</code>版本的模型参数：$4 \, bytes / param$</li>
-<li><code>fp32</code>版本的梯度：$4 \, bytes / param$</li>
-<li>动量：$4 \, bytes / param$</li>
-</ul>
-</li>
-</ul>
-<hr>
-<p>当然在实际训练时，还需要存储中间激活值以便在反向传播计算梯度时使用。这里的激活指的是<strong>前向传播过程中计算得到，并在反向传播过程中需要用到的所有张量</strong>。这里的激活不包含模型参数和优化器状态，但是包含了Dropout操作需要用到的mask矩阵。中间激活值和输入数据的大小（批次大小和序列长度）是成正相关的。</p>
-<p>当我们训练神经网络遇到显存不足（OOM，Out Of Memory）问题时，通常会尝试减小批次大小来避免显存不足的问题，这种方式减少的其实是中间激活占用的显存，而不是模型参数、梯度和优化器的显存。</p>
-<p>总得来说，训练时需要的显存来自多个方面：</p>
-<script type="math/tex; mode=display">Total \, Memory_{Training} = Model \, Memory + Optimizer \, Memory + Activation  \, Memory + Gradient \, Memory</script><p>对于大模型来说，需要的显存实在是太大，即使是一张A100（80G显存）也不可能存放得下所有参数。因此DeepSpeed提出了ZeRO的分布式训练方法：</p>
-<ul>
-<li>ZeRO-1<script type="math/tex; mode=display">Total \, Memory_{Training} \approx Model \, Memory + \frac{Optimizer \, Memory}{No.GPUs} + Activation \, Memory + Gradient \, Memory</script></li>
-<li>ZeRO-2<script type="math/tex; mode=display">Total \, Memory_{Training} \approx Model \, Memory +  Activation \, Memory + \frac{Optimizer \, Memory + Gradient \, Memory}{No.GPUs}</script></li>
-<li>ZeRO-3<script type="math/tex; mode=display">Total \, Memory_{Training} \approx Activation \, Memory + \frac{Model \, Memory + Optimizer \, Memory + Gradient \, Memory}{No.GPUs} + (ZeRO-3 \, Live \, Params)</script></li>
-</ul>
-<h3 id="推理显存"><a href="#推理显存" class="headerlink" title="推理显存"></a>推理显存</h3><p>神经网络推理阶段，没有优化器状态和梯度，也不需要保存中间激活，此时占用的显存要远小于训练阶段。</p>
-<p>在模型推理时，显存占用分为两部分：1）存放模型的权重；2）前向传播时需要的一小部分额外参数，如输入数据需要放在GPU上，一些中间计算结果（用完会尽快释放掉）。</p>
-<p>此外如果使用KV cache来加速推理过程，KV cache也需要占用显存。典型的大模型推断包含了两个阶段：</p>
-<ol>
-<li>预填充阶段：输入一个prompt，为每个transformer层生成key cache和value cache（KV Cache）</li>
-<li>解码阶段：使用并更新KV cache，一个接一个地生成token</li>
-</ol>
+<p>有研究者对语音模型的参数进行研究发现，语言模型的参数虽然很多，但是其中起到关键作用的还是低秩的本质维度（<code>low instrisic dimension</code>）。受此观点的启发，微软提出了低秩适配（Low-Rank Adaption，LoRA）技术来微调大型语言模型。</p>
+<p>LoRA设计了如下所示的结构，冻结预训练模型的权重参数，然后在每个Transformer块引入$A$和$B$这样两个低秩矩阵模块，去模拟全参微调的过程。</p>
+<img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/lora.png" class="" title="LoRA">
+<p>在面对不同的下游任务时，仅需训练参数量很少的低秩矩阵，而<strong>预训练权重</strong>可以在这些任务之间<strong>共享</strong>；训练好的低秩矩阵可以合并到预训练权重中，多分支结构变成单分支结构，这样就<strong>不会增加额外的推理延时</strong>。</p>
+<p>最重要的是，由于$\nabla W=BA$的参数量远小于$W$，因此相比于全参微调，LoRA显著降低了优化器状态这部分对显存资源的需求。对于梯度部分，LoRA在严格意义上并不能降低其对于显存资源的需求，甚至比起全参微调来说计算量还更大了，只不过中间状态量所占用的显存会被释放掉，降低了最终存储的需求。</p>
 <p>【参考文献】</p>
 <ol>
-<li><a target="_blank" rel="noopener" href="https://blog.eleuther.ai/transformer-math/">Transformer 101 Math</a></li>
-<li><a target="_blank" rel="noopener" href="https://kipp.ly/transformer-inference-arithmetic/">Transformer Inference Arithmetic</a></li>
-<li><a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/recipes/recipes/amp_recipe.html">PyTorch Document</a></li>
-<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/624740065">分析transformer模型的参数量、计算量、中间激活、KV cache</a></li>
+<li><a target="_blank" rel="noopener" href="https://ningshixian.github.io/2023/05/18/2023-05-18-PEFT%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/">PEFT技术简介</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/646831196">LoRA原理</a></li>
 </ol>
 
     </div>
@@ -377,13 +304,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2024/06/15/LLM%E6%97%B6%E4%BB%A3%E7%9A%84Normalization/" rel="prev" title="LLM时代的Normalization">
-      <i class="fa fa-chevron-left"></i> LLM时代的Normalization
+    <a href="/2024/06/17/%E5%9F%BA%E4%BA%8ETransformer%E7%9A%84%E7%BB%8F%E5%85%B8%E6%A8%A1%E5%9E%8B/" rel="prev" title="基于Transformer的经典模型">
+      <i class="fa fa-chevron-left"></i> 基于Transformer的经典模型
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2024/06/17/%E5%9F%BA%E4%BA%8ETransformer%E7%9A%84%E7%BB%8F%E5%85%B8%E6%A8%A1%E5%9E%8B/" rel="next" title="基于Transformer的经典模型">
-      基于Transformer的经典模型 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -443,7 +367,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E8%AE%A1%E7%AE%97"><span class="nav-text">混合精度计算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E6%98%BE%E5%AD%98"><span class="nav-text">训练显存</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E6%9D%83%E9%87%8D"><span class="nav-text">模型权重</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6"><span class="nav-text">梯度</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%99%A8%E7%8A%B6%E6%80%81"><span class="nav-text">优化器状态</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A8%E7%90%86%E6%98%BE%E5%AD%98"><span class="nav-text">推理显存</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Adapter-Tuning"><span class="nav-text">Adapter Tuning</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Prefix-Tuning"><span class="nav-text">Prefix Tuning</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Prompt-Tuning"><span class="nav-text">Prompt Tuning</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LoRA"><span class="nav-text">LoRA</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
