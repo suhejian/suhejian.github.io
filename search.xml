@@ -1062,12 +1062,14 @@ f(x) = \begin{cases}
 <li>ZeRO-3<script type="math/tex; mode=display">Total \, Memory_{Training} \approx Activation \, Memory + \frac{Model \, Memory + Optimizer \, Memory + Gradient \, Memory}{No.GPUs} + (ZeRO-3 \, Live \, Params)</script></li>
 </ul>
 <h3 id="推理显存"><a href="#推理显存" class="headerlink" title="推理显存"></a>推理显存</h3><p>神经网络推理阶段，没有优化器状态和梯度，也不需要保存中间激活，此时占用的显存要远小于训练阶段。</p>
-<p>在模型推理时，显存占用分为两部分：1）存放模型的权重；2）前向传播时需要的一小部分额外参数，如输入数据需要放在GPU上，一些中间计算结果（用完会尽快释放掉）。</p>
-<p>此外如果使用KV cache来加速推理过程，KV cache也需要占用显存。典型的大模型推断包含了两个阶段：</p>
+<p>在模型推理时，显存占用分为两部分：1）存放模型的权重和前向传播时需要的一小部分额外参数，如输入数据需要放在GPU上；2）存放模型的KV Cache，这部分不仅依赖模型的参数大小，还依赖模型的输入长度，会在推理过程中动态增长。当context长度足够长时，第二部分的显存大小就会占据主导地位，导致Out Of Memory问题。</p>
+<p>典型的大模型推断包含了两个阶段：</p>
 <ol>
 <li>预填充阶段：输入一个prompt，为每个transformer层生成key cache和value cache（KV Cache）</li>
 <li>解码阶段：使用并更新KV cache，一个接一个地生成token</li>
 </ol>
+<p>在GPU上部署模型的原则是：能一张卡部署，就不要跨多张卡；能一台机器部署，就不要跨多台机。这是因为<strong>卡内通信带宽 &gt; 卡间通信带宽 &gt; 机间通信带宽</strong>，模型部署时跨的设备越多，受设备通信带宽的拖累就越大。</p>
+<p>所以，减少KV Cache可以实现在更少的设备上推理更长的context，或者在相同的context长度下让推理的batch size更大，从而实现更快的推理速度或者更大的吞吐量。FlashAttention就是优化了KV Cache，从而实现了更低的推理成本。</p>
 <p>【参考文献】</p>
 <ol>
 <li><a href="https://blog.eleuther.ai/transformer-math/">Transformer 101 Math</a></li>
@@ -1114,6 +1116,30 @@ f(x) = \begin{cases}
 <ol>
 <li><a href="https://ningshixian.github.io/2023/05/18/2023-05-18-PEFT%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/">PEFT技术简介</a></li>
 <li><a href="https://zhuanlan.zhihu.com/p/646831196">LoRA原理</a></li>
+</ol>
+]]></content>
+      <categories>
+        <category>LLM</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>Attention进阶</title>
+    <url>/2024/07/03/Attention%E8%BF%9B%E9%98%B6/</url>
+    <content><![CDATA[<h2 id="MHA"><a href="#MHA" class="headerlink" title="MHA"></a>MHA</h2><p>在<a href="https://suhejian.github.io/2024/06/01/Transformer%E8%AF%A6%E8%A7%A3/">Transformer详解</a>中，我们已经介绍了Multi-Head Attention，这里不再赘述。</p>
+<p>如果只考虑主流的自回归LLM所使用的Causal Attention，在token by token递归生成时，新预测出来的第$t+1$个token并不会影响已经计算好的$\mathbf{k}_{\leq t}$和$\mathbf{v}_{\leq t}$。因此这部分结果可以缓存下来供后续生成调用，避免不必要的重复计算，这就是所谓的KV Cache。</p>
+<p>后面发展出来的MQA、GQA和MLA，都是围绕<strong>如何减少KV Cache同时尽可能地保证效果</strong>这个主题发展而来的产物。</p>
+<h2 id="MQA"><a href="#MQA" class="headerlink" title="MQA"></a>MQA</h2><p>MQA的全称是Multi-Query Attention，它是减少KV Cache的一次非常朴素的尝试。</p>
+<p>MQA的思路非常简单，直接让所有的Attention Head共享同一个$K$和$V$，如果有$h$个Head，MQA直接将KV Cache减少到了原来的$1/h$。</p>
+<p>目前来看，大部分任务的效果损失比较有限，而且MQA的支持者相信这部分损失可以通过进一步训练来弥补。此外，由于MQA共享了$K$和$V$，这会导致Attention的参数量减少将近一半，而为了模型总参数量不变，通常会相应地增大FFN/GLU的规模，这也能弥补一部分效果损失。</p>
+<h2 id="GQA"><a href="#GQA" class="headerlink" title="GQA"></a>GQA</h2><p>有人担心MQA对KV Cache的压缩太严重，以至于会影响模型的学习效率以及最终效果，提出了MHA和MQA之间的过渡版本GQA（Grouped-Query Attention）。</p>
+<p>GQA的思想也很朴素，它就是将所有的Head分为$g$个组，每组共享同一对$K$和$V$。</p>
+<p>Meta开源的LLaMA2-70B，LLaMA3全系列，DeepSeek-V1、Yi、ChatGLM系列等知名大模型都使用了GQA。</p>
+<p>LLaMA2-70B中，GQA的$g$设置为8，其它使用了GQA的同体量模型基本也保持了这个设置。我们知道，70B这个体量的模型，如果不进行极端的量化，那么不可能部署到单卡上。单卡不行，那么就只能单机了。一般情况下，一台机器可以装8张卡，而Attention的每个Head实际上是独立运算然后拼接起来的，当$g=8$时正好可以每张卡负责计算一组$K$和$V$对应的Attention Head，这样可以尽可能保证$K$和$V$多样性的同时最大程度减少卡间通信。</p>
+<img src="/2024/07/03/Attention%E8%BF%9B%E9%98%B6/attention.png" class="" title="attention">
+<p>【参考文献】</p>
+<ol>
+<li><a href="https://kexue.fm/archives/10091">缓存与效果的极限拉扯：从MHA、MQA、GQA到MLA</a></li>
+<li><a href="https://medium.com/friendliai/grouped-query-attention-gqa-vs-multi-head-attention-mha-optimizing-llm-inference-serving-eaa732beaeac#id_token=eyJhbGciOiJSUzI1NiIsImtpZCI6IjJhZjkwZTg3YmUxNDBjMjAwMzg4OThhNmVmYTExMjgzZGFiNjAzMWQiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIyMTYyOTYwMzU4MzQtazFrNnFlMDYwczJ0cDJhMmphbTRsamRjbXMwMHN0dGcuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIyMTYyOTYwMzU4MzQtazFrNnFlMDYwczJ0cDJhMmphbTRsamRjbXMwMHN0dGcuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDUwMTkwNTA2NzExMzU2MDg4NjYiLCJlbWFpbCI6ImhlamlhbnN1MTE3QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYmYiOjE3MTk5MjcxODgsIm5hbWUiOiJoZWppYW4gc3UiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jSkRhaXJKQnkzUWZMTlNYczFYZFN3NHBSbUVpMS05M0hwUURHcUF6Q3dtdFgtalRBPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6ImhlamlhbiIsImZhbWlseV9uYW1lIjoic3UiLCJpYXQiOjE3MTk5Mjc0ODgsImV4cCI6MTcxOTkzMTA4OCwianRpIjoiOWM1YzMxMjI3ZGFiM2ViZjAwMjBiOGE2NTk3MmY4ODYwOTQ2ODE4MSJ9.xLnppj949jyLhpSS01A8-qQL8FaLg7vO2CpUt5PrvHhBwCklXBqUBLPsjuCLTODjAvAZYQ7IuVlcS-dDuAdoKzQg19S1Vg4sGhr8fkDKdm308s01PE6w5figAePN7jP4yjjOzyebnBQstfusxUuVbmFER5cbvpPtDgQt95UJgiaHAr7K-3PeYOn5jRIhVFg4JvHypKJWzExp1rMXwg2QlcBpUhzUhagsWaW6r8z0X7vxuYhU0EYHHXQ8RD3KhTjloIinBvdi20AFj1igB-JYUhHbHqCjy7dvR9qbkcvvZX2qpnnZzk_CTBA0kF6arJB2DaZ3EkG9ePWnOB0E6DqS0A">GQA vs MHA</a></li>
 </ol>
 ]]></content>
       <categories>

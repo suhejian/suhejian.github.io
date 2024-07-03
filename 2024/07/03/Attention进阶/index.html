@@ -48,17 +48,21 @@
   };
 </script>
 
-  <meta name="description" content="Stay hungry, stay foolish.">
-<meta property="og:type" content="website">
-<meta property="og:title" content="摸鱼日记">
-<meta property="og:url" content="https://suhejian.github.io/categories/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/index.html">
+  <meta name="description" content="介绍了主流的Attention机制，包括Multi-Head Attention，Multi-Query Attention，Grouped-Query Attention和Multi-head Latent Attention。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Attention进阶">
+<meta property="og:url" content="https://suhejian.github.io/2024/07/03/Attention%E8%BF%9B%E9%98%B6/index.html">
 <meta property="og:site_name" content="摸鱼日记">
-<meta property="og:description" content="Stay hungry, stay foolish.">
+<meta property="og:description" content="介绍了主流的Attention机制，包括Multi-Head Attention，Multi-Query Attention，Grouped-Query Attention和Multi-head Latent Attention。">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://suhejian.github.io/2024/07/03/Attention%E8%BF%9B%E9%98%B6/attention.png">
+<meta property="article:published_time" content="2024-07-03T12:49:28.000Z">
+<meta property="article:modified_time" content="2024-07-03T14:34:36.119Z">
 <meta property="article:author" content="suhejian">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://suhejian.github.io/2024/07/03/Attention%E8%BF%9B%E9%98%B6/attention.png">
 
-<link rel="canonical" href="https://suhejian.github.io/categories/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/">
+<link rel="canonical" href="https://suhejian.github.io/2024/07/03/Attention%E8%BF%9B%E9%98%B6/">
 
 
 <script id="page-configurations">
@@ -66,11 +70,11 @@
   CONFIG.page = {
     sidebar: "",
     isHome: false,
-    isPost: false
+    isPost: true
   };
 </script>
 
-  <title>分类: 深度学习 | 摸鱼日记</title>
+  <title>Attention进阶 | 摸鱼日记</title>
   
 
 
@@ -195,130 +199,105 @@
           <div class="content">
             
 
+  <div class="posts-expand">
+      
   
   
-  
-  <div class="post-block">
-    <div class="posts-collapse">
-      <div class="collection-title">
-        <h1 class="collection-header">深度学习
-          <small>分类</small>
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://suhejian.github.io/2024/07/03/Attention%E8%BF%9B%E9%98%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="suhejian">
+      <meta itemprop="description" content="Stay hungry, stay foolish.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="摸鱼日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Attention进阶
         </h1>
-      </div>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-07-03 20:49:28 / 修改时间：22:34:36" itemprop="dateCreated datePublished" datetime="2024-07-03T20:49:28+08:00">2024-07-03</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LLM/" itemprop="url" rel="index">
+                    <span itemprop="name">LLM</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">介绍了主流的Attention机制，包括Multi-Head Attention，Multi-Query Attention，Grouped-Query Attention和Multi-head Latent Attention。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
 
       
-    <div class="collection-year">
-      <h1 class="collection-header">2024</h1>
-    </div>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2024-06-17T20:35:40+08:00"
-              content="2024-06-17">
-          06-17
-        </time>
-      </div>
-
-      <h2 class="post-title">
-          <a class="post-title-link" href="/2024/06/17/%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E5%92%8C%E6%98%BE%E5%AD%98%E8%AE%A1%E7%AE%97/" itemprop="url">
-            <span itemprop="name">混合精度和显存计算</span>
-          </a>
-      </h2>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2024-06-05T07:04:54+08:00"
-              content="2024-06-05">
-          06-05
-        </time>
-      </div>
-
-      <h2 class="post-title">
-          <a class="post-title-link" href="/2024/06/05/%E5%B8%B8%E7%94%A8Normalization/" itemprop="url">
-            <span itemprop="name">常用Normalization</span>
-          </a>
-      </h2>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2024-06-03T22:51:32+08:00"
-              content="2024-06-03">
-          06-03
-        </time>
-      </div>
-
-      <h2 class="post-title">
-          <a class="post-title-link" href="/2024/06/03/%E5%B8%B8%E7%94%A8%E6%BF%80%E6%B4%BB%E5%87%BD%E6%95%B0/" itemprop="url">
-            <span itemprop="name">常用激活函数</span>
-          </a>
-      </h2>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2024-06-03T22:51:24+08:00"
-              content="2024-06-03">
-          06-03
-        </time>
-      </div>
-
-      <h2 class="post-title">
-          <a class="post-title-link" href="/2024/06/03/%E5%B8%B8%E7%94%A8%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0/" itemprop="url">
-            <span itemprop="name">常用损失函数</span>
-          </a>
-      </h2>
-
-    </header>
-  </article>
-
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2024-06-03T21:15:22+08:00"
-              content="2024-06-03">
-          06-03
-        </time>
-      </div>
-
-      <h2 class="post-title">
-          <a class="post-title-link" href="/2024/06/03/%E5%B8%B8%E7%94%A8%E4%BC%98%E5%8C%96%E5%99%A8/" itemprop="url">
-            <span itemprop="name">常用优化器</span>
-          </a>
-      </h2>
-
-    </header>
-  </article>
+        <h2 id="MHA"><a href="#MHA" class="headerlink" title="MHA"></a>MHA</h2><p>在<a href="https://suhejian.github.io/2024/06/01/Transformer%E8%AF%A6%E8%A7%A3/">Transformer详解</a>中，我们已经介绍了Multi-Head Attention，这里不再赘述。</p>
+<p>如果只考虑主流的自回归LLM所使用的Causal Attention，在token by token递归生成时，新预测出来的第$t+1$个token并不会影响已经计算好的$\mathbf{k}_{\leq t}$和$\mathbf{v}_{\leq t}$。因此这部分结果可以缓存下来供后续生成调用，避免不必要的重复计算，这就是所谓的KV Cache。</p>
+<p>后面发展出来的MQA、GQA和MLA，都是围绕<strong>如何减少KV Cache同时尽可能地保证效果</strong>这个主题发展而来的产物。</p>
+<h2 id="MQA"><a href="#MQA" class="headerlink" title="MQA"></a>MQA</h2><p>MQA的全称是Multi-Query Attention，它是减少KV Cache的一次非常朴素的尝试。</p>
+<p>MQA的思路非常简单，直接让所有的Attention Head共享同一个$K$和$V$，如果有$h$个Head，MQA直接将KV Cache减少到了原来的$1/h$。</p>
+<p>目前来看，大部分任务的效果损失比较有限，而且MQA的支持者相信这部分损失可以通过进一步训练来弥补。此外，由于MQA共享了$K$和$V$，这会导致Attention的参数量减少将近一半，而为了模型总参数量不变，通常会相应地增大FFN/GLU的规模，这也能弥补一部分效果损失。</p>
+<h2 id="GQA"><a href="#GQA" class="headerlink" title="GQA"></a>GQA</h2><p>有人担心MQA对KV Cache的压缩太严重，以至于会影响模型的学习效率以及最终效果，提出了MHA和MQA之间的过渡版本GQA（Grouped-Query Attention）。</p>
+<p>GQA的思想也很朴素，它就是将所有的Head分为$g$个组，每组共享同一对$K$和$V$。</p>
+<p>Meta开源的LLaMA2-70B，LLaMA3全系列，DeepSeek-V1、Yi、ChatGLM系列等知名大模型都使用了GQA。</p>
+<p>LLaMA2-70B中，GQA的$g$设置为8，其它使用了GQA的同体量模型基本也保持了这个设置。我们知道，70B这个体量的模型，如果不进行极端的量化，那么不可能部署到单卡上。单卡不行，那么就只能单机了。一般情况下，一台机器可以装8张卡，而Attention的每个Head实际上是独立运算然后拼接起来的，当$g=8$时正好可以每张卡负责计算一组$K$和$V$对应的Attention Head，这样可以尽可能保证$K$和$V$多样性的同时最大程度减少卡间通信。</p>
+<img src="/2024/07/03/Attention%E8%BF%9B%E9%98%B6/attention.png" class="" title="attention">
+<p>【参考文献】</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://kexue.fm/archives/10091">缓存与效果的极限拉扯：从MHA、MQA、GQA到MLA</a></li>
+<li><a target="_blank" rel="noopener" href="https://medium.com/friendliai/grouped-query-attention-gqa-vs-multi-head-attention-mha-optimizing-llm-inference-serving-eaa732beaeac#id_token=eyJhbGciOiJSUzI1NiIsImtpZCI6IjJhZjkwZTg3YmUxNDBjMjAwMzg4OThhNmVmYTExMjgzZGFiNjAzMWQiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIyMTYyOTYwMzU4MzQtazFrNnFlMDYwczJ0cDJhMmphbTRsamRjbXMwMHN0dGcuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIyMTYyOTYwMzU4MzQtazFrNnFlMDYwczJ0cDJhMmphbTRsamRjbXMwMHN0dGcuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDUwMTkwNTA2NzExMzU2MDg4NjYiLCJlbWFpbCI6ImhlamlhbnN1MTE3QGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYmYiOjE3MTk5MjcxODgsIm5hbWUiOiJoZWppYW4gc3UiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNnOG9jSkRhaXJKQnkzUWZMTlNYczFYZFN3NHBSbUVpMS05M0hwUURHcUF6Q3dtdFgtalRBPXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6ImhlamlhbiIsImZhbWlseV9uYW1lIjoic3UiLCJpYXQiOjE3MTk5Mjc0ODgsImV4cCI6MTcxOTkzMTA4OCwianRpIjoiOWM1YzMxMjI3ZGFiM2ViZjAwMjBiOGE2NTk3MmY4ODYwOTQ2ODE4MSJ9.xLnppj949jyLhpSS01A8-qQL8FaLg7vO2CpUt5PrvHhBwCklXBqUBLPsjuCLTODjAvAZYQ7IuVlcS-dDuAdoKzQg19S1Vg4sGhr8fkDKdm308s01PE6w5figAePN7jP4yjjOzyebnBQstfusxUuVbmFER5cbvpPtDgQt95UJgiaHAr7K-3PeYOn5jRIhVFg4JvHypKJWzExp1rMXwg2QlcBpUhzUhagsWaW6r8z0X7vxuYhU0EYHHXQ8RD3KhTjloIinBvdi20AFj1igB-JYUhHbHqCjy7dvR9qbkcvvZX2qpnnZzk_CTBA0kF6arJB2DaZ3EkG9ePWnOB0E6DqS0A">GQA vs MHA</a></li>
+</ol>
 
     </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/" rel="prev" title="常用PEFT技术">
+      <i class="fa fa-chevron-left"></i> 常用PEFT技术
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
   </div>
-  
-  
-  
-
-  
-
 
 
           </div>
@@ -369,6 +348,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#MHA"><span class="nav-text">MHA</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MQA"><span class="nav-text">MQA</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GQA"><span class="nav-text">GQA</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -491,6 +471,56 @@
   
 
   
+      
+<script type="text/x-mathjax-config">
+    MathJax.Ajax.config.path['mhchem'] = '//cdn.jsdelivr.net/npm/mathjax-mhchem@3';
+
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$', '$'], ['\\(', '\\)'] ],
+      processEscapes: true,
+      skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    },
+    TeX: {
+        extensions: ['[mhchem]/mhchem.js'],
+      equationNumbers: {
+        autoNumber: 'AMS'
+      }
+    }
+  });
+
+  MathJax.Hub.Register.StartupHook('TeX Jax Ready', function() {
+    MathJax.InputJax.TeX.prefilterHooks.Add(function(data) {
+      if (data.display) {
+        var next = data.script.nextSibling;
+        while (next && next.nodeName.toLowerCase() === '#text') {
+          next = next.nextSibling;
+        }
+        if (next && next.nodeName.toLowerCase() === 'br') {
+          next.parentNode.removeChild(next);
+        }
+      }
+    });
+  });
+
+  MathJax.Hub.Queue(function() {
+    var all = MathJax.Hub.getAllJax(), i;
+    for (i = 0; i < all.length; i += 1) {
+      element = document.getElementById(all[i].inputID + '-Frame').parentNode;
+      if (element.nodeName.toLowerCase() == 'li') {
+        element = element.parentNode;
+      }
+      element.classList.add('has-jax');
+    }
+  });
+</script>
+<script>
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML', () => {
+    MathJax.Hub.Typeset();
+  }, window.MathJax);
+</script>
+
+    
 
   
 
