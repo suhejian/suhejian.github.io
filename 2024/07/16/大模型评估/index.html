@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://suhejian.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.1',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":true},
+    copycode: {"enable":true,"show_result":true,"style":null},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":true,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="随着越来越多的大模型出现，如何有效地评估这些模型的性能非常重要，本文介绍了大模型评测的一些基础知识。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="大模型评估">
+<meta property="og:url" content="https://suhejian.github.io/2024/07/16/%E5%A4%A7%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0/index.html">
+<meta property="og:site_name" content="摸鱼日记">
+<meta property="og:description" content="随着越来越多的大模型出现，如何有效地评估这些模型的性能非常重要，本文介绍了大模型评测的一些基础知识。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-07-15T23:44:22.000Z">
+<meta property="article:modified_time" content="2024-07-15T23:48:13.946Z">
+<meta property="article:author" content="suhejian">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://suhejian.github.io/2024/07/16/%E5%A4%A7%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>大模型评估 | 摸鱼日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">摸鱼日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">输出倒逼思考</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">12</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <a href="https://github.com/suhejian" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://suhejian.github.io/2024/07/16/%E5%A4%A7%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="suhejian">
+      <meta itemprop="description" content="Stay hungry, stay foolish.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="摸鱼日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          大模型评估
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-07-16 07:44:22 / 修改时间：07:48:13" itemprop="dateCreated datePublished" datetime="2024-07-16T07:44:22+08:00">2024-07-16</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LLM/" itemprop="url" rel="index">
+                    <span itemprop="name">LLM</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">随着越来越多的大模型出现，如何有效地评估这些模型的性能非常重要，本文介绍了大模型评测的一些基础知识。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="大模型评估"><a href="#大模型评估" class="headerlink" title="大模型评估"></a>大模型评估</h1><p>越来越多的大模型不断发布，每一个都宣称自己超过了ChatGPT，但是如何定量地评估这个大模型是好或者不好呢？</p>
+<p>在ChatGPT出现没多久的时候，评估方式往往是人工准备若干个刁钻问题，用来测试模型是否“智能”。但是显然这种测试只能带来一种“感觉”而非定量的衡量，如何客观公正得对一个模型进行充分的评估变成了一个迫切的需求。</p>
+<h2 id="从NLP任务到人类试题"><a href="#从NLP任务到人类试题" class="headerlink" title="从NLP任务到人类试题"></a>从NLP任务到人类试题</h2><p>传统NLP如果需要评估一个模型，就根据任务选择对应的数据集进行评测，如做阅读理解就选择<code>SQuAD</code>，做情感分析就选择<code>SST-2</code>，做句子表示的就选择<code>STS</code>等。最近几年随着预训练模型的发展，单个的数据集已经逐渐不足以综合评估一个模型，此时就选择拿多个数据集组成一个测试基准（benchmark）来测量。一些比较常见的测试基准有：</p>
+<ul>
+<li>GLUE和SuperGLUE</li>
+<li>中文的CLUE和SuperCLUE</li>
+<li>多语言的XTREME和XTREME-R</li>
+<li>sentence embedding的综合评估基准MTEB</li>
+</ul>
+<p>这些NLP任务往往代表着模型在解决某类特定问题上的表现。</p>
+<p>不过，各个新发布的大模型证明自己优越性的时候，用NLP任务来评测大模型并不是默认做法，主要有以下原因：</p>
+<ol>
+<li>NLP任务难度不够，许多简单的NLP任务，例如文本分类任务，预训练模型就可以逼近甚至超过人类表现，导致即使在这些数据集上取得很高的结果，也没有那么有吸引力</li>
+<li>NLP数据集存在严重的数据污染问题，许多NLP任务数据集都能在互联网上轻易获取，从而容易混入大模型的预训练语料里，导致其上的结果没有那么有说服力</li>
+<li>GPT-4不在这些NLP任务上测试了，这引领了大模型的评测方式</li>
+</ol>
+<p>目前的测试范式是，利用人类考题来测试。例如MMLU数据集，它包含了57个任务的人类试题，如数学、历史、计算机科学和法律等学科，将其组成一个测试基准。如果模型要有比较好的效果，需要同时具备世界知识和解题能力。</p>
+<p>人类试题是测试人类智能的一个很好的载体，无论在哪个国家，用试卷考试的方式来判断一个学生的智力水平发展到了什么阶段都是主流做法。</p>
+<p>此外，不同科目的试题带来了不同维度的测量：</p>
+<ul>
+<li>语言、社科类的题目，可以测量世界知识</li>
+<li>数学、自然科学类的题目，可以测量推理能力</li>
+</ul>
+<p>当然还有很多其它的能力，但是<strong>世界知识</strong>和<strong>推理能力</strong>往往是大模型希望增强的方面。通用模型需要在不同领域都贡献生产力，这自然需要模型知道各个领域的知识，知识能力可以很好地衡量底座模型的潜力；推理能力是在知识基础的进一步提升的能力，它代表模型可以做很困难、很复杂的事情。一个强大的模型，首先需要广泛的知识，然后在知识的基础上做推理。</p>
+<p><strong>模型大小和模型分数的关系</strong></p>
+<ol>
+<li><p>知识型任务的榜单上，模型大小和模型分数一般是连续变化的</p>
+</li>
+<li><p>推理型任务的榜单上，只有当模型大到一定程度之后，模型推理能力才会显著提升</p>
+</li>
+</ol>
+<p>对于知识型任务，Chain-of-thought (<code>CoT</code>) Prompting和Answer-Only (<code>AO</code>) Prompting的效果是差不多的；对于推理任务，<code>CoT</code>的效果则显著优于<code>AO</code>。</p>
+<p>模型的评测多种多样，例如采用的checkpoint种类，是pretrained checkpoint还是instruction-finetuned checkpoint；例如采用的prompt方式，是answer-only还是chain-of-thought，是zero-shot prompting还是few-shot prompting。</p>
+<h2 id="主流评测数据集"><a href="#主流评测数据集" class="headerlink" title="主流评测数据集"></a>主流评测数据集</h2><h3 id="MMLU"><a href="#MMLU" class="headerlink" title="MMLU"></a>MMLU</h3><p>MMLU数据集包含超过2.5万个题目，涉及科学、技术、工程、人文学科和社会科学等57个学科，题目难度从初级到高级专业水平不等。</p>
+<p>它既考验世界知识，也考验解决问题的能力。</p>
+<h3 id="GSM8K"><a href="#GSM8K" class="headerlink" title="GSM8K"></a>GSM8K</h3><p>GSM8K是一个包含8.5K高质量、多样化小学数学问题的数据集，创建该数据集是为了支持对<strong>需要多步骤推理的基本数学问题</strong>进行问答的任务。</p>
+<p>该数据集包含7.5K训练数据和1K测试数据，这些问题通常需要2-8个步骤才能解决，有效评估了模型的数学和逻辑能力。</p>
+<h3 id="MATH"><a href="#MATH" class="headerlink" title="MATH"></a>MATH</h3><p>MATH是一个由数学竞赛问题组成的评测集，包含7.5K训练数据和5K测试数据。</p>
+<h3 id="HumanEval"><a href="#HumanEval" class="headerlink" title="HumanEval"></a>HumanEval</h3><p>HumanEval是由OpenAI发布的164个手写的编程问题，包括模型语言理解、推理、算法和简单数学等任务。</p>
+<h3 id="C-Eval"><a href="#C-Eval" class="headerlink" title="C-Eval"></a>C-Eval</h3><p>C-Eval数据集由13948道多选题组成，涉及4个学科大类，52个学科小类，分别对应四个难度等级。</p>
+<p>C-Eval的题目构成：</p>
+<ul>
+<li>STEM：科学、技术、工程和数学教育，包含计算机、电气工程、化学、数学和物理等多个学科</li>
+<li>Social Science：社会科学，包含政治、地理、教育学、经济学和工商管理等多个学科</li>
+<li>Humanity：人文科学，包含法律、艺术、逻辑学、语文和历史等多个学科</li>
+<li>Other：其它，其它学科的汇总，包含环境、消防、税务、体育和医学等多个学科</li>
+</ul>
+<p>共有四个难度等级，在图示中使用颜色标记区分，分别是初中（蓝色）、高中（绿色）、大学（黄色）和专业（红色），每个学科对应一个难度等级。</p>
+<p>C-Eval包含三份数据，分别是<code>dev</code>、<code>val</code>和<code>test</code>，其中<code>dev</code>数据有答案并且带有答案解释，可以用来<strong>构建CoT的few-shot提示词</strong>，<code>val</code>数据有答案，<code>test</code>数据没有答案。一般来说，利用<code>dev</code>的few-shot在<code>val</code>数据上做离线测试获得C-Eval评分，而在<code>test</code>数据上提交答案给C-Eval官网获得最终得分。</p>
+<p>C-Eval有两种Prompt方式来引导模型给出答案，一种是answer-only，另一种是chain-of-thought。每一种又可以采用zero-shot和few-shot两种形式。对于Base模型，由于没有经过指令微调，需要结合few-shot给出范例进行提示；而Chat模型采用zero-shot直接对话即可。</p>
+<p>如果是few-shot设置，模型通常会遵循样例中给出的固定格式，所以提取答案很简单；如果是zero-shot或者没有做过指令微调的模型，它们可能无法很好地理解指令，甚至有时候不会回答问题，此时C-Eval直接计算下一个预测token等于<code>A</code>、<code>B</code>、<code>C</code>和<code>D</code>的概率，然后以概率最大的选项作为答案。</p>
+<h3 id="GAOKAO-Bench"><a href="#GAOKAO-Bench" class="headerlink" title="GAOKAO-Bench"></a>GAOKAO-Bench</h3><p>GAOKAO-Bench是一个以中国高考题目为数据集，评测大模型语言理解能力、逻辑推理能力的评测框架。</p>
+<p>数据部分：收集了2010-2022年全国高考卷的题目，其中包含1781道客观题和1030道主观题</p>
+<p>评测部分：采用zero-shot的方式测试各模型，对客观题采用基于规则的答案抽取方式，对主观题采取人工评阅的方式（其实是提供了LLM-as-a-Judge脚本，利用GPT-4-turbo为模型的主观题打分）</p>
+<p>主观题Prompt样例：</p>
+<blockquote>
+<p>请解答下面的数学填空题\n仔细阅读题目，解答其中的问题，请你一步步思考并将思考过程写在【解析】和<eoe>之间。请把你的答案写在【答案】和<eoa>之间。\n完整的题目回答格式如下：\n【解析】 …<eoe>\n【答案】…<eoa>\n请你严格按照上述格式作答。\n题目如下:</p>
+</blockquote>
+<p>客观题Prompt样例：</p>
+<blockquote>
+<p>请你做一道数学选择题\n请你一步一步思考并将思考过程写在【解析】和<eoe>之间。你将从A，B，C，D中选出正确的答案，并写在【答案】和<eoa>之间。\n例如：【答案】: A <eoa>\n完整的题目回答的格式如下：\n【解析】 … <eoe>\n【答案】 … <eoa>\n请你严格按照上述格式作答。\n题目如下：</p>
+</blockquote>
+<p>主观题评分Prompt样例：</p>
+<blockquote>
+<p>你是一名高中地理老师，正在批改高考地理试卷。请根据下面的【题目】、【分析过程】、【标准答案】、【分值】、【学生分析与答案】，对【学生分析与答案】进行判分并给出理由。请注意【学生分析与答案】可能为空。输出格式为：【判分理由】…\n 【得分】…\n…【总分】…分\n其中【总分】直接给出这道题的最终分数，如【总分】5分，注意不要超过这道题的【分值】。请严格对照标准答案和学生答案给分。\n</p>
+</blockquote>
+<h3 id="CMMLU"><a href="#CMMLU" class="headerlink" title="CMMLU"></a>CMMLU</h3><p>CMMLU是一个综合性的中文评估基准，专门用于评估语言模型在中文语境下的知识和推理能力。</p>
+<p>CMMLU涵盖了从基础学科到高级专业水平的67个科目，包括：需要知识的人文科学和社会科学，需要计算和推理的自然科学，以及需要生活常识的中国驾驶规则等，涵盖11528个多选题。此外，CMMLU中的许多任务具有中国特定的答案，可能在其它地区或语言中并不普遍适用。因此该评测基准是一个完全中国化的中文评测基准。</p>
+<h2 id="如何测试"><a href="#如何测试" class="headerlink" title="如何测试"></a>如何测试</h2><p>解决了用什么来做测试，还需要讨论<strong>如何测试</strong>。具体来说涉及两个方面：1）谁来打分；2）在什么上面打分。</p>
+<p>如何给模型的输出打分呢？无论是传统的NLP任务，或者是多选题形式的人类考题，都有相对明确的打分标准，例如准确率，或者专门的衡量指标例如ROUGE或者BLEU。但是对于更丰富的一些任务，例如对话或者人类试题中的主观题，自动评估往往是不够的。</p>
+<p>早期碰到此类情况时，默认是用人类打分，然而随着LLM的发展，用模型来给模型打分也逐渐流行起来。具体来说，对于不同模型的输出，用一个（相对来说比较强的）模型，例如GPT-4来对这些输出进行比较和打分。</p>
+<p>但是需要注意，有些工作也发现用模型做自动评估往往还是存在一些系统性的偏见，即使简单地把不同答案顺序做调换，也会影响到最终结果。所以，用模型来打分仍然不能被100%信任。</p>
+<p>此外，以上的测试基准或者榜单重点在于衡量模型的<strong>通用</strong>能力，特别是知识和推理能力，有些基准额外考虑了对话类型模型的对话问答能力，然而目前看来LLM的应用潜力远不止于此。所以最近也出现了一些工作，从不同角度进行衡量LLM的能力：</p>
+<ul>
+<li><p>从领域的角度：模型在医疗、法律和教育等领域的表现</p>
+</li>
+<li><p>从工具使用的角度：模型调用工具的能力</p>
+</li>
+<li><p>模型的鲁棒性：评估大模型对<strong>对抗性提示</strong>的鲁棒性</p>
+</li>
+<li><p>模型的可靠性：评估大模型在毒性、偏见和价值对齐等方面的表现，研究模型的伦理合规性</p>
+</li>
+</ul>
+<p>不过，即使是使用<strong>相同模型+相同数据集</strong>，如果Prompt和计算分数的方式略有差异，也会造成结果差异很大。Falcon在huggingface的榜单上超过LLaMA，官方给的解释就是用到的Prompt和计算分数的方式和原版稍有差异。</p>
+<p>此外，每个榜单都是有偏的，也是可以通过各种手段刷上去的，所以基于自己的需求，构造一个专属的测试集也许要可靠的多。</p>
+<p>【参考资料】</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://yaofu.notion.site/C-Eval-6b79edd91b454e3d8ea41c59ea2af873">C-Eval：构造中文大模型的知识评估基准</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/hkust-nlp/ceval/blob/main/README_zh.md">C-Eval README_zh</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/644373658">LLM Evaluation 如何评估一个大模型？</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/07/03/Attention%E8%BF%9B%E9%98%B6/" rel="prev" title="Attention进阶">
+      <i class="fa fa-chevron-left"></i> Attention进阶
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%A7%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0"><span class="nav-text">大模型评估</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8ENLP%E4%BB%BB%E5%8A%A1%E5%88%B0%E4%BA%BA%E7%B1%BB%E8%AF%95%E9%A2%98"><span class="nav-text">从NLP任务到人类试题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E6%B5%81%E8%AF%84%E6%B5%8B%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-text">主流评测数据集</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#MMLU"><span class="nav-text">MMLU</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GSM8K"><span class="nav-text">GSM8K</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MATH"><span class="nav-text">MATH</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HumanEval"><span class="nav-text">HumanEval</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#C-Eval"><span class="nav-text">C-Eval</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GAOKAO-Bench"><span class="nav-text">GAOKAO-Bench</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CMMLU"><span class="nav-text">CMMLU</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%B5%8B%E8%AF%95"><span class="nav-text">如何测试</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">suhejian</p>
+  <div class="site-description" itemprop="description">Stay hungry, stay foolish.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/suhejian" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;suhejian" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">suhejian</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v7.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.1
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>
