@@ -48,24 +48,21 @@
   };
 </script>
 
-  <meta name="description" content="简要介绍了四种主流的PEFT技术，包括Adapter Tuning，Prefix Tuning，Prompt Tuning和LoRA，这些技术降低了LLM的训练门槛，让普通人也能微调大模型。">
+  <meta name="description" content="目前开源的大语言模型百花齐放，本文从模型体系角度对开源大模型做了划分，同时介绍了代表性的大模型工作。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="常用PEFT技术">
-<meta property="og:url" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/index.html">
+<meta property="og:title" content="开源大模型">
+<meta property="og:url" content="https://suhejian.github.io/2024/07/21/%E5%BC%80%E6%BA%90%E5%A4%A7%E6%A8%A1%E5%9E%8B/index.html">
 <meta property="og:site_name" content="摸鱼日记">
-<meta property="og:description" content="简要介绍了四种主流的PEFT技术，包括Adapter Tuning，Prefix Tuning，Prompt Tuning和LoRA，这些技术降低了LLM的训练门槛，让普通人也能微调大模型。">
+<meta property="og:description" content="目前开源的大语言模型百花齐放，本文从模型体系角度对开源大模型做了划分，同时介绍了代表性的大模型工作。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/adapter.png">
-<meta property="og:image" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/prefix.png">
-<meta property="og:image" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/prompt.png">
-<meta property="og:image" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/lora.png">
-<meta property="article:published_time" content="2024-06-25T13:14:00.000Z">
-<meta property="article:modified_time" content="2024-06-25T14:35:25.938Z">
+<meta property="og:image" content="https://suhejian.github.io/2024/07/21/%E5%BC%80%E6%BA%90%E5%A4%A7%E6%A8%A1%E5%9E%8B/instructGPT.png">
+<meta property="article:published_time" content="2024-07-21T11:59:14.000Z">
+<meta property="article:modified_time" content="2024-07-21T13:01:14.129Z">
 <meta property="article:author" content="suhejian">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/adapter.png">
+<meta name="twitter:image" content="https://suhejian.github.io/2024/07/21/%E5%BC%80%E6%BA%90%E5%A4%A7%E6%A8%A1%E5%9E%8B/instructGPT.png">
 
-<link rel="canonical" href="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/">
+<link rel="canonical" href="https://suhejian.github.io/2024/07/21/%E5%BC%80%E6%BA%90%E5%A4%A7%E6%A8%A1%E5%9E%8B/">
 
 
 <script id="page-configurations">
@@ -77,7 +74,7 @@
   };
 </script>
 
-  <title>常用PEFT技术 | 摸鱼日记</title>
+  <title>开源大模型 | 摸鱼日记</title>
   
 
 
@@ -207,7 +204,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/">
+    <link itemprop="mainEntityOfPage" href="https://suhejian.github.io/2024/07/21/%E5%BC%80%E6%BA%90%E5%A4%A7%E6%A8%A1%E5%9E%8B/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -220,7 +217,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          常用PEFT技术
+          开源大模型
         </h1>
 
         <div class="post-meta">
@@ -231,7 +228,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2024-06-25 21:14:00 / 修改时间：22:35:25" itemprop="dateCreated datePublished" datetime="2024-06-25T21:14:00+08:00">2024-06-25</time>
+              <time title="创建时间：2024-07-21 19:59:14 / 修改时间：21:01:14" itemprop="dateCreated datePublished" datetime="2024-07-21T19:59:14+08:00">2024-07-21</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -246,7 +243,7 @@
             </span>
 
           
-            <div class="post-description">简要介绍了四种主流的PEFT技术，包括Adapter Tuning，Prefix Tuning，Prompt Tuning和LoRA，这些技术降低了LLM的训练门槛，让普通人也能微调大模型。</div>
+            <div class="post-description">目前开源的大语言模型百花齐放，本文从模型体系角度对开源大模型做了划分，同时介绍了代表性的大模型工作。</div>
 
         </div>
       </header>
@@ -257,37 +254,59 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>在大模型时代，全参微调的成本过于高昂，而且会带来<strong>灾难性遗忘问题</strong>。参数高效微调（Parameter-Efficient Fine-Tuning，PEFT）技术应运而生，固定住大部分预训练参数，仅微调少量或者额外的模型参数，从而大大降低LLM的训练成本。</p>
-<p>PEFT技术的主要做法包括Adapter Tuning、Prefix Tuning、Prompt Tuning和LoRA。Adapter Tuning通过设计<strong>adapter结构</strong>，只对新增的adapter结构进行微调，保证训练的高效性；Prefix Tuning是在输入token之前构造和任务相关的<strong>virtual token</strong>，即连续的embedding向量，训练时固定Transformer部分的参数，只更新和下游任务相关的前缀向量（prefix embedding）；Prompt Tuning则是在输入中加入<strong>prompt tokens</strong>进行微调，也就是通过自然语言指令让模型完成相应的任务；LoRA固定住预训练权重，额外引入了可训练的<strong>低秩分解矩阵</strong>，仅训练低秩矩阵那部分参数。</p>
-<h2 id="Adapter-Tuning"><a href="#Adapter-Tuning" class="headerlink" title="Adapter Tuning"></a>Adapter Tuning</h2><p><a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1902.00751">Parameter-Efficient Transfer Learning for NLP</a>提出了针对BERT的PEFT微调方式，拉开了PEFT研究的序幕。谷歌的研究者指出，在面对特定的下游任务，全参微调过于低效；固定预训练模型的部分层，只微调接近下游任务的那几层参数又难以达到较好的效果。</p>
-<p>他们在Transformer结构中设计了如下图所示的Adapter结构，在训练时只对新增的Adapter结构进行微调，其它模块的参数是保持不变的。</p>
-<img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/adapter.png" class="" title="adapter">
-<p>除此之外，为了尽可能少的引入更多参数，同时为了保证训练的高效性，他们将Adapter设计为这样的结构：首先是一个<code>down-project</code>层将高维特征映射到低维特征，随后会经过一个非线性层，最后再用一个<code>up-project</code>层将低维特征映射回原来的高维特征。还设计了一个<code>skip-connection</code>结构，确保在最差情况下能够退化为原始结构。</p>
-<p>从实验结果来看，该方法相比于原来预训练模型的参数量只额外增加了3.6%的参数规模，取得了和全参微调接近的效果（GLUE指标在0.4%以内）。</p>
-<h2 id="Prefix-Tuning"><a href="#Prefix-Tuning" class="headerlink" title="Prefix Tuning"></a>Prefix Tuning</h2><p><a target="_blank" rel="noopener" href="https://arxiv.org/pdf/2101.00190">Prefix-Tuning: Optimizing Continuous Prompts for Generation</a>由斯坦福研究人员提出，在输入token之前构造一段任务相关的virtual tokens，训练的时候只更新prefix部分的参数，预训练模型的参数是固定的。此外，为了防止直接更新Prefix的参数导致训练不稳定的情况，他们在Prefix层前面添加了MLP结构，训练完成之后，只保留Prefix的参数。</p>
-<img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/prefix.png" class="" title="Prefix">
-<p>该方法其实和构造Prompt类似，只不过Prompt是人为构造的显式提示，而且无法更新参数，Prefix则是可以学习的隐式提示。</p>
-<p>实验结果证明了Prefix Tuning的方式可以取得不错的效果。</p>
-<h2 id="Prompt-Tuning"><a href="#Prompt-Tuning" class="headerlink" title="Prompt Tuning"></a>Prompt Tuning</h2><p><a target="_blank" rel="noopener" href="https://arxiv.org/pdf/2104.08691">The Power of Scale for Parameter-Efficient Prompt Tuning</a>这篇文章表示只要模型规模足够大，简单加入Prompt tokens进行微调，就能取得很好的效果。</p>
-<p>该方法可以看作是Prefix Tuning的简化版本，只对输入层添加的prompt tokens embedding进行微调，而Prefix Tuning是对virtual token对应的上游层全部进行微调。因此Prompt Tuning的微调参数量数量级要更小，且不需要修改原始模型结构。</p>
-<img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/prompt.png" class="" title="Prompt">
-<p>这篇文章表明随着预训练模型参数的增加，即使是最简单的设置也能达到很好的效果。</p>
-<h2 id="LoRA"><a href="#LoRA" class="headerlink" title="LoRA"></a>LoRA</h2><p>LoRA全称是LoRA: Low-Rank Adaptation of Large Language Models，<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/2106.09685">原文链接</a>。</p>
-<p>微软和CMU的研究者指出，现有的一些PEFT方法存在这样的问题：</p>
+        <h1 id="开源大模型"><a href="#开源大模型" class="headerlink" title="开源大模型"></a>开源大模型</h1><p><strong>为什么大模型会出现涌现能力？</strong> </p>
+<p>首先介绍一下涌现现象：当模型参数量达到一定规模后，突然出现的新的能力，这些能力在小规模模型中通常不会出现或者表现不明显。</p>
+<p>NIPS 2023年的一篇<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2304.15004">论文</a>提出了对涌现能力的一种解释：对于特定任务和模型，在分析模型输出时，涌现能力的出现是由于研究人员选择的<strong>衡量指标</strong>所致，而非模型行为随着规模扩大而发生了根本性变化。具体而言，<strong>非线性或者不连续的衡量标准会产生明显的涌现能力</strong>，而线性或连续的度量标准会导致模型性能的平滑、连续、可预测的变化。</p>
+<h2 id="模型体系"><a href="#模型体系" class="headerlink" title="模型体系"></a>模型体系</h2><p>目前主流的开源大模型体系分为三种：</p>
 <ul>
-<li>由于增加了模型的深度，从而额外增加了模型推理的延时，如Adapter方法</li>
-<li>Prompt较难训练，同时减少了模型的可用序列长度，如Prompt Tuning、Prefix Tuning和P-Tuning方法</li>
-<li>往往效率和质量不可兼得，效果比全参微调要差</li>
+<li>Causal Decoder<ul>
+<li>从左到右的单向注意力</li>
+<li>自回归语言模型，预训练任务和下游应用完全一致，严格遵守<strong>当前token只能看到已经解码的部分</strong>的规则，在文本生成任务上效果优异，训练效率高，zero-shot能力更强，具有<strong>涌现能力</strong></li>
+<li>代表模型：LLaMA系列模型</li>
 </ul>
-<p>有研究者对语音模型的参数进行研究发现，语言模型的参数虽然很多，但是其中起到关键作用的还是低秩的本质维度（<code>low instrisic dimension</code>）。受此观点的启发，微软提出了低秩适配（Low-Rank Adaption，LoRA）技术来微调大型语言模型。</p>
-<p>LoRA设计了如下所示的结构，冻结预训练模型的权重参数，然后在每个Transformer块引入$A$和$B$这样两个低秩矩阵模块，去模拟全参微调的过程。</p>
-<img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/lora.png" class="" title="LoRA">
-<p>在面对不同的下游任务时，仅需训练参数量很少的低秩矩阵，而<strong>预训练权重</strong>可以在这些任务之间<strong>共享</strong>；训练好的低秩矩阵可以合并到预训练权重中，多分支结构变成单分支结构，这样就<strong>不会增加额外的推理延时</strong>。</p>
-<p>最重要的是，由于$\nabla W=BA$的参数量远小于$W$，因此相比于全参微调，LoRA显著降低了优化器状态这部分对显存资源的需求。对于梯度部分，LoRA在严格意义上并不能降低其对于显存资源的需求，甚至比起全参微调来说计算量还更大了，只不过中间状态量所占用的显存会被释放掉，降低了最终存储的需求。</p>
+</li>
+<li>Encoder-Decoder<ul>
+<li>输入上采用双向注意力，对问题的编码理解更充分；输出上采用单向注意力</li>
+<li>在偏理解的NLP任务上效果好，但是在长文本生成任务上效果较差，训练效率较低</li>
+<li>代表模型：T5，BART</li>
+</ul>
+</li>
+<li>Prefix Decoder<ul>
+<li>prefix部分的token采取双向注意力+Causal Decoder</li>
+<li>代表模型：ChatGLM，ChatGLM2，U-PaLM</li>
+</ul>
+</li>
+</ul>
+<p>这三者的主要区别在于attention mask不一样。此外Causal Decoder的训练效率也要高于Prefix Decoder，因为Causal Decoder结构会在所有token上计算损失，而Prefix Decoder只会在输出上计算损失。</p>
+<p><strong>为什么现在的大模型大部分都是Decoder Only结构？</strong></p>
+<ol>
+<li><p>Zero-Shot<br>Decoder Only结构的模型在没有任何微调数据的情况下，Zero-Shot的表现能力最好；而Encoder-Decoder结构的模型需要在一定数量的标注数据上做多任务微调才能激发最佳性能</p>
+</li>
+<li><p>注意力满秩<br>理论上Encoder的双向注意力会存在<strong>低秩问题</strong>，即Attention矩阵由一个$n\times d$的矩阵与$d\times n$的矩阵相乘之后加<code>softmax</code>得到（$n &gt;&gt; d$）。退化到低秩状态可能会削弱模型的表达能力。相比之下<code>Causal Attention</code>是下三角矩阵，行列式不等于0，保证了满秩，从而具备更强的建模能力。</p>
+</li>
+<li><p>预训练任务难度<br>Decoder Only架构在预训练时由于每个位置接触的信息较少，因此预测下一个token的难度更高，当模型足够大、数据足够多时，Decoder Only模型学习通用表征的上限更高。</p>
+</li>
+<li><p>推理效率<br>1）就生成任务而言，引入双向注意力并无实质好处，Encoder-Decoder模型架构之所以能够在某些场景下表现更好，可能是因为它多了一倍参数，所以在同等参数量、同等推理成本下，Decoder-Only架构是最优选择。<br>2）Decoder Only架构支持KV-Cache的复用，每个token的表示只与它之前的输入有关，而Encoder-Decoder架构难以做到这一点</p>
+</li>
+</ol>
+<h2 id="InstructGPT"><a href="#InstructGPT" class="headerlink" title="InstructGPT"></a>InstructGPT</h2><p>OpenAI并没有公布ChatGPT的论文，不过他们介绍ChatGPT是基于InstructGPT方案做的，因为InstructGPT这篇论文具有重要的参考意义，<a target="_blank" rel="noopener" href="https://arxiv.org/pdf/2203.02155">论文</a>全称是<code>Training language models to follow instructions with human feedback</code>。</p>
+<p>GPT-3本质上是基于上下文的生成模型，这意味着当给GPT-3某种上下文内容时，它会尝试填充其余的内容。例如，给它句子的前半部分，它将尝试推测句子的下半部分；给它一个问句，它会给出回答。但是GPT-3经常会生成<strong>与用户期望不一致的</strong>非预期输出，这说明增加语言模型的规模并不一定能够提升它们理解和执行用户意图的能力。</p>
+<p>InstructGPT通过使用人类的反馈来微调语言模型，从而使模型更好地符合用户的意图。首先，构建（用户Prompt-期望模型输出）的数据集，使用这个数据集通过监督学习对GPT-3进行微调；随后，收集一个模型输出的排名数据集，使用这个数据集通过人类反馈的强化学习（Reinforcement Learning from Human Feedback, RLHF）进一步微调监督模型。微调之后的模型称之为InstructGPT。实验表明，1.3B的InstructGPT模型产生的输出比175B的GPT-3模型产生的输出更受人类青睐。</p>
+<img src="/2024/07/21/%E5%BC%80%E6%BA%90%E5%A4%A7%E6%A8%A1%E5%9E%8B/instructGPT.png" class="" title="InstructGPT">
+<p>具体而言，主要流程如下：</p>
+<ul>
+<li>工程师团队设计了一个基于Prompt的数据集，提示文本中详细说明了下游任务是什么。将这个数据集给标注人员标注，得到人类期望的模型输出。那标注后的数据集去<strong>微调GPT-3</strong>。</li>
+<li>用微调之后的GPT-3去预测第一步的数据集中的任务，得到$N$个结果。再让标注人员去标注每个选项的好坏，并把这个标注后的数据集用来<strong>训练奖励模型</strong>（Reward Model, RM）。</li>
+<li>用微调之后的GPT-3再次对Prompt进行预测，然后通过奖励模型进行打分，计算奖励，通过PPO策略更新模型参数</li>
+</ul>
+<p>当然，这个方法可能会导致在NLP任务上表现变差，为了缓解该问题，OpenAI在微调期间混合了一小部分用于训练GPT-3的原始数据，还尝试将预训练梯度混合到PPO梯度中。此外，随着模型的更新，强化学习模型产生的数据和训练奖励模型的数据的差异会越来越大，OpenAI的解决方案是在损失函数中加入KL惩罚项来确保PPO模型的输出和SFT的输出差距不会太大。</p>
 <p>【参考文献】</p>
 <ol>
-<li><a target="_blank" rel="noopener" href="https://ningshixian.github.io/2023/05/18/2023-05-18-PEFT%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/">PEFT技术简介</a></li>
-<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/646831196">LoRA原理</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.labellerr.com/blog/exploring-architectures-and-configurations-for-large-language-models-llms/#:~:text=The%20encoder%2Ddecoder%20architecture%20is,bidirectional%20attention%20over%20prefix%20tokens.">Exploring Architectures and Configurations for Large Language Models(LLMs)</a></li>
+<li><a target="_blank" rel="noopener" href="https://kexue.fm/archives/9529">为什么现在的LLM都是Decoder-only的架构？</a></li>
+<li><a target="_blank" rel="noopener" href="https://finisky.github.io/llm-emergent-ability-is-mirage-summary/">大模型的涌现能力是幻象？</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.qin.news/instructgpt/">InstructGPT 浅析</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/590311003">ChatGPT/InstructGPT详解</a></li>
 </ol>
 
     </div>
@@ -304,13 +323,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2024/06/17/%E5%9F%BA%E4%BA%8ETransformer%E7%9A%84%E7%BB%8F%E5%85%B8%E6%A8%A1%E5%9E%8B/" rel="prev" title="基于Transformer的经典模型">
-      <i class="fa fa-chevron-left"></i> 基于Transformer的经典模型
+    <a href="/2024/07/21/%E5%91%BD%E5%90%8D%E5%AE%9E%E4%BD%93%E8%AF%86%E5%88%AB/" rel="prev" title="命名实体识别">
+      <i class="fa fa-chevron-left"></i> 命名实体识别
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2024/07/03/Attention%E8%BF%9B%E9%98%B6/" rel="next" title="Attention进阶">
-      Attention进阶 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -370,7 +386,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Adapter-Tuning"><span class="nav-text">Adapter Tuning</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Prefix-Tuning"><span class="nav-text">Prefix Tuning</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Prompt-Tuning"><span class="nav-text">Prompt Tuning</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LoRA"><span class="nav-text">LoRA</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%80%E6%BA%90%E5%A4%A7%E6%A8%A1%E5%9E%8B"><span class="nav-text">开源大模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E4%BD%93%E7%B3%BB"><span class="nav-text">模型体系</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#InstructGPT"><span class="nav-text">InstructGPT</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
