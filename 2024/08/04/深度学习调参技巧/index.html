@@ -48,19 +48,20 @@
   };
 </script>
 
-  <meta name="description" content="简要介绍了混合精度的概念，以此为基础评估了训练阶段和推理阶段各需要占用多少显存。针对ZeRO技术和KV Cache技术这里只是一笔带过，后续会详细介绍。">
+  <meta name="description" content="本文介绍了在模型训练过程中，遇到效果不佳的情况时，该如何调整超参数或训练策略。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="混合精度和显存计算">
-<meta property="og:url" content="https://suhejian.github.io/2024/06/17/%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E5%92%8C%E6%98%BE%E5%AD%98%E8%AE%A1%E7%AE%97/index.html">
+<meta property="og:title" content="深度学习调参技巧">
+<meta property="og:url" content="https://suhejian.github.io/2024/08/04/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E8%B0%83%E5%8F%82%E6%8A%80%E5%B7%A7/index.html">
 <meta property="og:site_name" content="摸鱼日记">
-<meta property="og:description" content="简要介绍了混合精度的概念，以此为基础评估了训练阶段和推理阶段各需要占用多少显存。针对ZeRO技术和KV Cache技术这里只是一笔带过，后续会详细介绍。">
+<meta property="og:description" content="本文介绍了在模型训练过程中，遇到效果不佳的情况时，该如何调整超参数或训练策略。">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2024-06-17T12:35:40.000Z">
-<meta property="article:modified_time" content="2024-07-03T13:25:50.170Z">
+<meta property="article:published_time" content="2024-08-04T09:50:06.000Z">
+<meta property="article:modified_time" content="2024-08-04T09:55:07.572Z">
 <meta property="article:author" content="suhejian">
+<meta property="article:tag" content="深度学习">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://suhejian.github.io/2024/06/17/%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E5%92%8C%E6%98%BE%E5%AD%98%E8%AE%A1%E7%AE%97/">
+<link rel="canonical" href="https://suhejian.github.io/2024/08/04/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E8%B0%83%E5%8F%82%E6%8A%80%E5%B7%A7/">
 
 
 <script id="page-configurations">
@@ -72,7 +73,7 @@
   };
 </script>
 
-  <title>混合精度和显存计算 | 摸鱼日记</title>
+  <title>深度学习调参技巧 | 摸鱼日记</title>
   
 
 
@@ -202,7 +203,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://suhejian.github.io/2024/06/17/%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E5%92%8C%E6%98%BE%E5%AD%98%E8%AE%A1%E7%AE%97/">
+    <link itemprop="mainEntityOfPage" href="https://suhejian.github.io/2024/08/04/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E8%B0%83%E5%8F%82%E6%8A%80%E5%B7%A7/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -215,7 +216,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          混合精度和显存计算
+          深度学习调参技巧
         </h1>
 
         <div class="post-meta">
@@ -224,16 +225,10 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2024-06-17 20:35:40" itemprop="dateCreated datePublished" datetime="2024-06-17T20:35:40+08:00">2024-06-17</time>
+              <time title="创建时间：2024-08-04 17:50:06 / 修改时间：17:55:07" itemprop="dateCreated datePublished" datetime="2024-08-04T17:50:06+08:00">2024-08-04</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-07-03 21:25:50" itemprop="dateModified" datetime="2024-07-03T21:25:50+08:00">2024-07-03</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="fa fa-folder-o"></i>
@@ -247,7 +242,7 @@
             </span>
 
           
-            <div class="post-description">简要介绍了混合精度的概念，以此为基础评估了训练阶段和推理阶段各需要占用多少显存。针对ZeRO技术和KV Cache技术这里只是一笔带过，后续会详细介绍。</div>
+            <div class="post-description">本文介绍了在模型训练过程中，遇到效果不佳的情况时，该如何调整超参数或训练策略。</div>
 
         </div>
       </header>
@@ -258,117 +253,40 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h3 id="混合精度计算"><a href="#混合精度计算" class="headerlink" title="混合精度计算"></a>混合精度计算</h3><p>在深度学习中，常用<strong>混合精度计算</strong>来加速模型训练。举例来说，线性层或者卷积层在使用<code>float16</code>计算时速度要比使用<code>float32</code>快得多，而且这些算子对精度要求没有那么高；减法操作等算子则对精度有较高要求，一般需要<code>float32</code>精度。PyTorch提供自动混合精度（<code>torch.cuda.amp</code>）方法，尝试将每个操作和适当的数值类型匹配，以此减少模型的内存占用和训练时长。</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>数据类型</th>
-<th>符号占位</th>
-<th>指数占位</th>
-<th>尾数占位</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>fp16</code></td>
-<td>1</td>
-<td>5</td>
-<td>10</td>
-</tr>
-<tr>
-<td><code>bf16</code></td>
-<td>1</td>
-<td>8</td>
-<td>7</td>
-</tr>
-<tr>
-<td><code>fp32</code></td>
-<td>1</td>
-<td>8</td>
-<td>23</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>一般来说有以上三种浮点数类型，其中指数占位代表了浮点数表示的<strong>范围</strong>，尾数占位代表了浮点数表示的<strong>精度</strong>。</p>
-<p>当然，使用混合精度计算也不是没有缺点，需要搭配一些优化策略：</p>
-<ul>
-<li>梯度下溢<br>  在训练过程中，特别是在使用低精度浮点数（如<code>float16</code>）时，梯度可能会变得非常小，导致数值不稳定性，这种现象称为梯度下溢</li>
-<li>梯度缩放<br>  对于使用<code>float16</code>梯度的网络，梯度缩放在反向传播之前放大梯度，减少梯度下溢的问题，从而帮助网络更好地收敛</li>
-</ul>
-<p>混合精度计算的优缺点：</p>
-<ul>
-<li>优点<ul>
-<li>混合精度训练可以提高训练速度，减少内存使用</li>
-<li>同时使用<code>fp32</code>进行关键的计算，以保证准确性</li>
-</ul>
-</li>
-<li>缺点<ul>
-<li>混合精度训练可能会导致数值不稳定，特别是在模型梯度非常小或非常大的时候，还需要额外的校准步骤来确保<code>fp16</code>计算的准确性</li>
-</ul>
-</li>
-</ul>
-<h3 id="训练显存"><a href="#训练显存" class="headerlink" title="训练显存"></a>训练显存</h3><p>在模型训练时，除了存储模型权重需要占用显存，存储优化器状态、计算梯度也需要占用显存。所以训练占用的显存要比推理时更多。</p>
-<h4 id="模型权重"><a href="#模型权重" class="headerlink" title="模型权重"></a>模型权重</h4><p>如果全部使用<code>fp32</code>精度的浮点数类型，那么显存占用和模型参数存在这样的关系：</p>
-<script type="math/tex; mode=display">Memory_{model}=(4 \, bytes / param) * (No.params)</script><p>如果全部使用<code>fp16</code>精度的浮点数类型，那么显存占用和模型参数存在这样的关系：</p>
-<script type="math/tex; mode=display">Memory_{model}=(2 \, bytes / param) * (No.params)</script><p>而如果使用混合精度，显存占用和模型参数的关系如下：</p>
-<script type="math/tex; mode=display">Memory_{model}=(2 \, bytes / param) * (No.params)</script><p>还要再加上<strong>优化器状态</strong>中的<code>fp32</code>版本的模型参数，只不过不放在这里计算，放到优化器状态中计算。</p>
-<h4 id="梯度"><a href="#梯度" class="headerlink" title="梯度"></a>梯度</h4><p>梯度既可以使用<code>fp32</code>类型也可以使用<code>fp16</code>类型，不过一般和模型的数据类型一致。</p>
-<p>所以如果是<code>fp32</code>类型，显存占用关系如下：</p>
-<script type="math/tex; mode=display">Memory_{gradients} = (4 \, bytes / param) * (No.params)</script><p>如果是<code>fp16</code>类型，显存占用关系如下：</p>
-<script type="math/tex; mode=display">Memory_{gradients} = (2 \, bytes / param) * (No.params)</script><h4 id="优化器状态"><a href="#优化器状态" class="headerlink" title="优化器状态"></a>优化器状态</h4><p>在优化器更新模型参数时，会使用<code>float32</code>类型的优化器状态、<code>float32</code>类型的梯度和<code>float32</code>类型的模型参数来更新。</p>
-<p>选择不同的优化器，对显存的占用是不一样的：</p>
-<ul>
-<li><p>AdamW：$Memory_{optimizer} = (16 \, bytes / param) * (No.params)$</p>
-<ul>
-<li><code>fp32</code>版本的模型参数：$4 \, bytes / param$</li>
-<li><code>fp32</code>版本的梯度：$4 \, bytes / param$</li>
-<li>一阶动量：$4 \, bytes / param$</li>
-<li>二阶动量：$4 \, bytes / param$</li>
-</ul>
-</li>
-<li><p>8-bit的优化器，如<code>bitsandbytes</code>：$Memory_{optimizer} = (10 \, bytes / param) * (No.params)$</p>
-<ul>
-<li><code>fp32</code>版本的模型参数：$4 \, bytes / param$</li>
-<li><code>fp32</code>版本的梯度：$4 \, bytes / param$</li>
-<li>一阶动量：$1 \, bytes / param$</li>
-<li>二阶动量：$1 \, bytes / param$</li>
-</ul>
-</li>
-<li><p>带动量的SGD优化器：$Memory_{optimizer} = (12 \, bytes / param) * (No.params)$</p>
-<ul>
-<li><code>fp32</code>版本的模型参数：$4 \, bytes / param$</li>
-<li><code>fp32</code>版本的梯度：$4 \, bytes / param$</li>
-<li>动量：$4 \, bytes / param$</li>
-</ul>
-</li>
-</ul>
-<hr>
-<p>当然在实际训练时，还需要存储中间激活值以便在反向传播计算梯度时使用。这里的激活指的是<strong>前向传播过程中计算得到，并在反向传播过程中需要用到的所有张量</strong>。这里的激活不包含模型参数和优化器状态，但是包含了Dropout操作需要用到的mask矩阵。中间激活值和输入数据的大小（批次大小和序列长度）是成正相关的。</p>
-<p>当我们训练神经网络遇到显存不足（OOM，Out Of Memory）问题时，通常会尝试减小批次大小来避免显存不足的问题，这种方式减少的其实是中间激活占用的显存，而不是模型参数、梯度和优化器的显存。</p>
-<p>总得来说，训练时需要的显存来自多个方面：</p>
-<script type="math/tex; mode=display">Total \, Memory_{Training} = Model \, Memory + Optimizer \, Memory + Activation  \, Memory + Gradient \, Memory</script><p>对于大模型来说，需要的显存实在是太大，即使是一张A100（80G显存）也不可能存放得下所有参数。因此DeepSpeed提出了ZeRO的分布式训练方法：</p>
-<ul>
-<li>ZeRO-1<script type="math/tex; mode=display">Total \, Memory_{Training} \approx Model \, Memory + \frac{Optimizer \, Memory}{No.GPUs} + Activation \, Memory + Gradient \, Memory</script></li>
-<li>ZeRO-2<script type="math/tex; mode=display">Total \, Memory_{Training} \approx Model \, Memory +  Activation \, Memory + \frac{Optimizer \, Memory + Gradient \, Memory}{No.GPUs}</script></li>
-<li>ZeRO-3<script type="math/tex; mode=display">Total \, Memory_{Training} \approx Activation \, Memory + \frac{Model \, Memory + Optimizer \, Memory + Gradient \, Memory}{No.GPUs} + (ZeRO-3 \, Live \, Params)</script></li>
-</ul>
-<h3 id="推理显存"><a href="#推理显存" class="headerlink" title="推理显存"></a>推理显存</h3><p>神经网络推理阶段，没有优化器状态和梯度，也不需要保存中间激活，此时占用的显存要远小于训练阶段。</p>
-<p>在模型推理时，显存占用分为两部分：1）存放模型的权重和前向传播时需要的一小部分额外参数，如输入数据需要放在GPU上；2）存放模型的KV Cache，这部分不仅依赖模型的参数大小，还依赖模型的输入长度，会在推理过程中动态增长。当context长度足够长时，第二部分的显存大小就会占据主导地位，导致Out Of Memory问题。</p>
-<p>典型的大模型推断包含了两个阶段：</p>
+        <p>训练深度学习模型也被称为“炼丹”，这其中涉及到多个方面的参数调整，本文介绍几个主流的优化策略。</p>
+<h2 id="损失值"><a href="#损失值" class="headerlink" title="损失值"></a>损失值</h2><p><strong>训练过程中loss突然变成NaN的可能原因与解决方案</strong></p>
+<p>思考神经网络的训练过程：输入数据，前向传播，计算损失，反向传播，更新参数后继续前向传播，计算损失，反向传播…每一个阶段都可能导致loss变成<code>NaN</code>。</p>
 <ol>
-<li>预填充阶段：输入一个prompt，为每个transformer层生成key cache和value cache（KV Cache）</li>
-<li>解码阶段：使用并更新KV cache，一个接一个地生成token</li>
+<li><p>输入部分出现坏样本<br> 坏样本一般是指不符合任务要求，需要被清洗掉的样本，比如图像识别任务中全黑图片等。坏样本不符合模型训练的要求，因此输入到模型中根本无法得到正常的结果，所以loss会变得巨大以至于成为NaN。<br> <strong>解决方案</strong>：找出并清理坏样本<br> 如果发现loss在逐步减小但是处理<strong>某一批数据</strong>时突然变为NaN，一般可以考虑是样本的原因。在此基础上，可以暂时停掉模型的反向传播，保持初始参数，也就是无论loss是多少都不进行参数调整。如果仍然是跑到某一批数据就出现NaN，那么就可以排除是模型优化过程中梯度爆炸的问题。（因为模型参数根本没变，可以排除是训练导致的loss爆炸）<br> 我们可以设置训练的batch size为1，逐样本送入网络，同时设置shuffle为False，也就是不打乱顺序。出现loss为NaN，表示遇到了坏样本，此时迭代的批次数，就是该坏样本在数据集的位置，从而定位了坏样本出现的位置。排除后，重新训练，继续观察loss的情况，直到能正常训练一个epoch，表示所有的坏样本均被去掉，可以开始正常训练了。</p>
+</li>
+<li><p>不合适的损失函数<br> 采用一些涉及到除法、对数函数等损失函数时，需要注意除零、对数输入是负数的情况，这同样会导致loss变成NaN。这种情况一般在开始训练时就出现，不存在loss逐渐增大到爆炸的过程。<br> <strong>解决方案</strong>：一般通过对网络输出值域以及损失函数定义的数学分析进行判断，并进行相应的调整。</p>
+</li>
+<li><p>梯度爆炸<br> 在训练过程中如果学习率等超参数设置的不合理，会导致优化过程中不仅没有减小loss，反而因为震荡导致loss逐渐增大，最终超过了float表示范围，出现NaN。这一过程通常伴随渐变和自激的特性，即在训练到某一轮时对参数调整步幅过大从而导致模型变差，输出的loss随之增大，此时反向传播的梯度也会随之增大，最终模型的参数越调越差，直至崩溃。<br> 如果输出每一轮的loss，就可以发现loss逐渐增大的过程，从而能够基本锁定问题出现在梯度爆炸这一层面。<br> <strong>解决方案</strong>：一般是减小学习率，如果涉及到多个损失函数，可以找出哪一项导致了梯度爆炸，通过减小其权重解决问题</p>
+</li>
 </ol>
-<p>在GPU上部署模型的原则是：能一张卡部署，就不要跨多张卡；能一台机器部署，就不要跨多台机。这是因为<strong>卡内通信带宽 &gt; 卡间通信带宽 &gt; 机间通信带宽</strong>，模型部署时跨的设备越多，受设备通信带宽的拖累就越大。</p>
-<p>所以，减少KV Cache可以实现在更少的设备上推理更长的context，或者在相同的context长度下让推理的batch size更大，从而实现更快的推理速度或者更大的吞吐量。FlashAttention就是优化了KV Cache，从而实现了更低的推理成本。</p>
+<p>出现loss为<code>NaN</code>的情况将导致训练无法正常进行，需要排查可能的原因并解决。梯度爆炸是最常见的情况，损失函数问题和坏样本问题比较难想到。只有全面排查，彻底解决loss为<code>NaN</code>的问题，才能使模型按照我们希望的方向进行优化。</p>
+<h2 id="学习率"><a href="#学习率" class="headerlink" title="学习率"></a>学习率</h2><p>学习率如果设置的过大，有可能会导致梯度爆炸，同时也有可能导致难以收敛到最优点；反之，如果学习率过小，会导致网络训练得太慢。</p>
+<h3 id="warmup策略"><a href="#warmup策略" class="headerlink" title="warmup策略"></a>warmup策略</h3><p>在训练初期，由于网络参数是随机初始化的，损失值很大，导致梯度值也很大，此时我们希望学习率小一点，防止梯度爆炸；而在训练中期，我们希望学习率大一点，加速网络训练；在训练末期，我们希望网络收敛到最优点，此时学习率也应该小一点。</p>
+<p>如果使用较大的batch size训练神经网络时，可以使用warmup策略。</p>
+<p>Warmup策略顾名思义就是让学习率先预热一下，在训练初期不直接使用最大的学习率，而是用一个逐渐增大的学习率去训练网络，当学习率增大到最高点时，再使用学习率下降策略衰减学习率的值。</p>
+<p>实验表明，在batch size比较大时，warmup可以稳定提升模型的精度。</p>
+<h3 id="学习率下降策略"><a href="#学习率下降策略" class="headerlink" title="学习率下降策略"></a>学习率下降策略</h3><p>在整个训练过程中，我们不能使用同样的学习率来更新权重，否则无法到达最优点，所以需要在训练过程中调整学习率的大小。</p>
+<p>在训练初始阶段，由于权重处于随机初始化的状态，损失函数相对容易进行梯度下降，所以可以设置一个较大的学习率；在训练后期，由于权重参数已经接近最优值，较大的学习率无法进一步寻找最优值，所以需要设置一个较小的学习率。</p>
+<p>有多种学习率下降方式：</p>
+<ul>
+<li>阶梯式下降</li>
+<li>多项式下降</li>
+<li>指数下降</li>
+<li>余弦下降</li>
+</ul>
+<p>其中<code>cosine_decay</code>无需调整超参数，鲁棒性也比较高，成为现在提高模型精度首选的学习率下降方式。</p>
+<h2 id="Dropout"><a href="#Dropout" class="headerlink" title="Dropout"></a>Dropout</h2><p>Dropout在<strong>训练时</strong>让某神经元的激活值以一定的概率$p$（满足伯努利分布）停止工作，由于它不会太依赖某些局部特征，这样可以使得模型泛化性更强，<strong>防止过拟合</strong>。</p>
+<p>在测试时，为了保证每次推理的一致性，不能再随机让神经元激活值失活。假设每个神经元原始输出的绝对值均值为$x$，那么该层训练时dropout之后的输出绝对值均值为$(1-p)*x$，如果测试时简单地让所有神经元都按照正常输出值原样输出，那么输出的绝对值均值为$x$，这会导致训练和测试的不一致。</p>
+<p>因此，带dropout的层，测试时会让所有神经元都输出，但是输出值要从原始的$x$变成$(1-p)*x$。</p>
+<p>当然，也可以在训练的时候就除以$1-p$，这样训练时dropout后每个神经元输出的绝对值均值就是$x$，测试的时候直接做恒等映射输出就行，速度更快，这也是PyTorch的官方实现。</p>
 <p>【参考文献】</p>
 <ol>
-<li><a target="_blank" rel="noopener" href="https://blog.eleuther.ai/transformer-math/">Transformer 101 Math</a></li>
-<li><a target="_blank" rel="noopener" href="https://kipp.ly/transformer-inference-arithmetic/">Transformer Inference Arithmetic</a></li>
-<li><a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/recipes/recipes/amp_recipe.html">PyTorch Document</a></li>
-<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/624740065">分析transformer模型的参数量、计算量、中间激活、KV cache</a></li>
+<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/andyL_05/article/details/119138160">训练过程中Loss突然变为NaN的可能原因与解决方案</a></li>
 </ol>
 
     </div>
@@ -378,6 +296,9 @@
     
 
       <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" rel="tag"># 深度学习</a>
+          </div>
 
         
 
@@ -385,12 +306,12 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2024/06/15/LLM%E6%97%B6%E4%BB%A3%E7%9A%84Normalization/" rel="prev" title="LLM时代的Normalization">
-      <i class="fa fa-chevron-left"></i> LLM时代的Normalization
+    <a href="/2024/07/21/%E5%BC%80%E6%BA%90%E5%A4%A7%E6%A8%A1%E5%9E%8B/" rel="prev" title="开源大模型">
+      <i class="fa fa-chevron-left"></i> 开源大模型
     </a></div>
       <div class="post-nav-item">
-    <a href="/2024/06/17/%E5%9F%BA%E4%BA%8ETransformer%E7%9A%84%E7%BB%8F%E5%85%B8%E6%A8%A1%E5%9E%8B/" rel="next" title="基于Transformer的经典模型">
-      基于Transformer的经典模型 <i class="fa fa-chevron-right"></i>
+    <a href="/2024/08/04/FlashAttention%E4%B8%8EPagedAttention/" rel="next" title="FlashAttention与PagedAttention">
+      FlashAttention与PagedAttention <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -451,7 +372,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E8%AE%A1%E7%AE%97"><span class="nav-text">混合精度计算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E6%98%BE%E5%AD%98"><span class="nav-text">训练显存</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E6%9D%83%E9%87%8D"><span class="nav-text">模型权重</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6"><span class="nav-text">梯度</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%99%A8%E7%8A%B6%E6%80%81"><span class="nav-text">优化器状态</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A8%E7%90%86%E6%98%BE%E5%AD%98"><span class="nav-text">推理显存</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8D%9F%E5%A4%B1%E5%80%BC"><span class="nav-text">损失值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%A6%E4%B9%A0%E7%8E%87"><span class="nav-text">学习率</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#warmup%E7%AD%96%E7%95%A5"><span class="nav-text">warmup策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%A6%E4%B9%A0%E7%8E%87%E4%B8%8B%E9%99%8D%E7%AD%96%E7%95%A5"><span class="nav-text">学习率下降策略</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Dropout"><span class="nav-text">Dropout</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

@@ -60,7 +60,7 @@
 <meta property="og:image" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/prompt.png">
 <meta property="og:image" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/lora.png">
 <meta property="article:published_time" content="2024-06-25T13:14:00.000Z">
-<meta property="article:modified_time" content="2024-06-25T14:35:25.938Z">
+<meta property="article:modified_time" content="2024-08-04T08:53:55.206Z">
 <meta property="article:author" content="suhejian">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://suhejian.github.io/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/adapter.png">
@@ -153,7 +153,7 @@
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">14</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">18</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -229,10 +229,16 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2024-06-25 21:14:00 / 修改时间：22:35:25" itemprop="dateCreated datePublished" datetime="2024-06-25T21:14:00+08:00">2024-06-25</time>
+              <time title="创建时间：2024-06-25 21:14:00" itemprop="dateCreated datePublished" datetime="2024-06-25T21:14:00+08:00">2024-06-25</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-08-04 16:53:55" itemprop="dateModified" datetime="2024-08-04T16:53:55+08:00">2024-08-04</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="fa fa-folder-o"></i>
@@ -257,8 +263,15 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>在大模型时代，全参微调的成本过于高昂，而且会带来<strong>灾难性遗忘问题</strong>。参数高效微调（Parameter-Efficient Fine-Tuning，PEFT）技术应运而生，固定住大部分预训练参数，仅微调少量或者额外的模型参数，从而大大降低LLM的训练成本。</p>
-<p>PEFT技术的主要做法包括Adapter Tuning、Prefix Tuning、Prompt Tuning和LoRA。Adapter Tuning通过设计<strong>adapter结构</strong>，只对新增的adapter结构进行微调，保证训练的高效性；Prefix Tuning是在输入token之前构造和任务相关的<strong>virtual token</strong>，即连续的embedding向量，训练时固定Transformer部分的参数，只更新和下游任务相关的前缀向量（prefix embedding）；Prompt Tuning则是在输入中加入<strong>prompt tokens</strong>进行微调，也就是通过自然语言指令让模型完成相应的任务；LoRA固定住预训练权重，额外引入了可训练的<strong>低秩分解矩阵</strong>，仅训练低秩矩阵那部分参数。</p>
+        <p>在大模型时代，全参微调的成本过于高昂，而且会带来<strong>灾难性遗忘问题</strong>，即用特定训练数据去微调可能会把这个领域的表现变好，但是可能会把原来表现好的领域能力变差。参数高效微调（Parameter-Efficient Fine-Tuning，PEFT）技术应运而生，固定住大部分预训练参数，仅微调少量或者额外的模型参数，从而大大降低LLM的训练成本。</p>
+<p>从训练数据以及训练方法的角度在，大模型的微调有以下几条技术路线：</p>
+<ol>
+<li>监督式微调（Supervised Fine Tuning，SFT）<br> 利用人工标注的数据，用传统机器学习中监督学习的方式对大模型进行微调</li>
+<li>基于人类反馈的强化学习微调（Reinforcement Learning with Human Feedback，RLHF）<br> 将人类的反馈以强化学习的方式引入到大模型微调，让大模型生成的结果更加符合人类期望</li>
+<li>基于AI反馈的强化学习微调（Reinforcement Learning with AI Feedback，RLAIF）<br> 整体和RLHF类似，只不过反馈来源是AI，主要是想解决反馈系统的效率问题，因为收集人类反馈的成本比较高，而且效率比较低</li>
+</ol>
+<p>微调的最终目的是在可控成本下，尽可能提升大模型在特定领域的能力。</p>
+<p>本文暂时只关注SFT方案，PEFT技术的主要做法包括Adapter Tuning、Prefix Tuning、Prompt Tuning和LoRA。Adapter Tuning通过设计<strong>adapter结构</strong>，只对新增的adapter结构进行微调，保证训练的高效性；Prefix Tuning是在输入token之前构造和任务相关的<strong>virtual token</strong>，即连续的embedding向量，训练时固定Transformer部分的参数，只更新和下游任务相关的前缀向量（prefix embedding）；Prompt Tuning则是在输入中加入<strong>prompt tokens</strong>进行微调，也就是通过自然语言指令让模型完成相应的任务；LoRA固定住预训练权重，额外引入了可训练的<strong>低秩分解矩阵</strong>，仅训练低秩矩阵那部分参数。</p>
 <h2 id="Adapter-Tuning"><a href="#Adapter-Tuning" class="headerlink" title="Adapter Tuning"></a>Adapter Tuning</h2><p><a target="_blank" rel="noopener" href="https://arxiv.org/pdf/1902.00751">Parameter-Efficient Transfer Learning for NLP</a>提出了针对BERT的PEFT微调方式，拉开了PEFT研究的序幕。谷歌的研究者指出，在面对特定的下游任务，全参微调过于低效；固定预训练模型的部分层，只微调接近下游任务的那几层参数又难以达到较好的效果。</p>
 <p>他们在Transformer结构中设计了如下图所示的Adapter结构，在训练时只对新增的Adapter结构进行微调，其它模块的参数是保持不变的。</p>
 <img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/adapter.png" class="" title="adapter">
@@ -279,15 +292,28 @@
 <li>Prompt较难训练，同时减少了模型的可用序列长度，如Prompt Tuning、Prefix Tuning和P-Tuning方法</li>
 <li>往往效率和质量不可兼得，效果比全参微调要差</li>
 </ul>
-<p>有研究者对语音模型的参数进行研究发现，语言模型的参数虽然很多，但是其中起到关键作用的还是低秩的本质维度（<code>low instrisic dimension</code>）。受此观点的启发，微软提出了低秩适配（Low-Rank Adaption，LoRA）技术来微调大型语言模型。</p>
+<p>有研究者对语音模型的参数进行研究发现，语言模型的参数虽然很多，但是其中起到关键作用的还是<strong>低秩的本质维度</strong>（<code>low instrisic dimension</code>）。受此观点的启发，微软提出了低秩适配（Low-Rank Adaption，LoRA）技术来微调大型语言模型。</p>
+<p><strong>微调的本质</strong></p>
+<p>假设网络原本的预训练参数为$W_0 \in {R}^{d \times k}$，在新的下游任务微调之后，参数变成$W \in R^{d \times k}$，那么参数的变化量$\Delta W = W - W_0$。</p>
+<p>因为$W=W_0 + \Delta W$，所以对模型微调其实可以将原有的参数$W_0$直接冻结，只学习变化量$\Delta W$。</p>
+<p><strong>低秩分解</strong></p>
+<p>现有的预训练模型通常是<strong>过参数化的</strong>，在对这些模型进行微调时，参数的更新主要在<strong>低维子空间中</strong>。换句话说，很多高维子空间的参数在微调前后根本没有改变。基于这一点，微调所学习的$\Delta W$也就不需要那么高的维度（秩），我们可以将其降低到一个更低的维度进行优化。</p>
+<p>当然，如果参数的更新大量发生在高维子空间中，此时进行低秩分解就会遗漏信息，导致LoRA失效。</p>
+<p><strong>LoRA做法</strong></p>
 <p>LoRA设计了如下所示的结构，冻结预训练模型的权重参数，然后在每个Transformer块引入$A$和$B$这样两个低秩矩阵模块，去模拟全参微调的过程。</p>
 <img src="/2024/06/25/%E5%B8%B8%E7%94%A8PEFT%E6%8A%80%E6%9C%AF/lora.png" class="" title="LoRA">
+<script type="math/tex; mode=display">
+\Delta W = BA</script><p>其中，$B\in R^{d\times r}$，$A\in R^{r\times k}$。一般来说，$r &lt;&lt; min(d,k)$。</p>
+<p><strong>矩阵A和矩阵B的初始化设置</strong></p>
+<p>矩阵$B$被初始化为0，矩阵$A$采用高斯初始化。初始偏移为0是为了在训练开始时<strong>维持网络的原有输出</strong>，高斯初始化则是保证在真正开始学习之后能够更好地收敛。</p>
+<p>如果$B$和$A$全都初始化为0，那么就与神经网络初始化为0一样，容易导致梯度消失，因为初始所有神经元的功能都是等价的；如果$B$和$A$全部都高斯初始化，那么网络训练刚开始就会有概率得到一个过大的偏移值$\Delta W$，从而引入太多噪声，导致难以收敛。</p>
 <p>在面对不同的下游任务时，仅需训练参数量很少的低秩矩阵，而<strong>预训练权重</strong>可以在这些任务之间<strong>共享</strong>；训练好的低秩矩阵可以合并到预训练权重中，多分支结构变成单分支结构，这样就<strong>不会增加额外的推理延时</strong>。</p>
-<p>最重要的是，由于$\nabla W=BA$的参数量远小于$W$，因此相比于全参微调，LoRA显著降低了优化器状态这部分对显存资源的需求。对于梯度部分，LoRA在严格意义上并不能降低其对于显存资源的需求，甚至比起全参微调来说计算量还更大了，只不过中间状态量所占用的显存会被释放掉，降低了最终存储的需求。</p>
+<p>最重要的是，由于$\Delta W=BA$的参数量远小于$W$，因此相比于全参微调，LoRA显著<strong>降低了优化器状态这部分对显存资源的需求</strong>。对于梯度部分，LoRA在严格意义上并不能降低其对于显存资源的需求，甚至比起全参微调来说计算量还更大了，只不过中间状态量所占用的显存会被释放掉，降低了最终存储的需求。</p>
 <p>【参考文献】</p>
 <ol>
 <li><a target="_blank" rel="noopener" href="https://ningshixian.github.io/2023/05/18/2023-05-18-PEFT%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B/">PEFT技术简介</a></li>
 <li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/646831196">LoRA原理</a></li>
+<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_40714949/article/details/131988734">简单理解大模型参数高效微调中的LoRA</a></li>
 </ol>
 
     </div>
@@ -384,7 +410,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-count">18</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -393,6 +419,10 @@
           
         <span class="site-state-item-count">3</span>
         <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">标签</span>
       </div>
   </nav>
 </div>

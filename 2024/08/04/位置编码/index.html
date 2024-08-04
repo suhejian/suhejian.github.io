@@ -48,19 +48,19 @@
   };
 </script>
 
-  <meta name="description" content="简要介绍了混合精度的概念，以此为基础评估了训练阶段和推理阶段各需要占用多少显存。针对ZeRO技术和KV Cache技术这里只是一笔带过，后续会详细介绍。">
+  <meta name="description" content="本篇博客是对苏神博客的一个学习笔记，主要学习了绝对位置编码、相对位置编码和融合了两种位置编码的RoPE位置编码。RoPE在LLM中非常重要，需要重点掌握。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="混合精度和显存计算">
-<meta property="og:url" content="https://suhejian.github.io/2024/06/17/%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E5%92%8C%E6%98%BE%E5%AD%98%E8%AE%A1%E7%AE%97/index.html">
+<meta property="og:title" content="位置编码">
+<meta property="og:url" content="https://suhejian.github.io/2024/08/04/%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81/index.html">
 <meta property="og:site_name" content="摸鱼日记">
-<meta property="og:description" content="简要介绍了混合精度的概念，以此为基础评估了训练阶段和推理阶段各需要占用多少显存。针对ZeRO技术和KV Cache技术这里只是一笔带过，后续会详细介绍。">
+<meta property="og:description" content="本篇博客是对苏神博客的一个学习笔记，主要学习了绝对位置编码、相对位置编码和融合了两种位置编码的RoPE位置编码。RoPE在LLM中非常重要，需要重点掌握。">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2024-06-17T12:35:40.000Z">
-<meta property="article:modified_time" content="2024-07-03T13:25:50.170Z">
+<meta property="article:published_time" content="2024-08-04T11:44:51.000Z">
+<meta property="article:modified_time" content="2024-08-04T11:47:04.940Z">
 <meta property="article:author" content="suhejian">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://suhejian.github.io/2024/06/17/%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E5%92%8C%E6%98%BE%E5%AD%98%E8%AE%A1%E7%AE%97/">
+<link rel="canonical" href="https://suhejian.github.io/2024/08/04/%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81/">
 
 
 <script id="page-configurations">
@@ -72,7 +72,7 @@
   };
 </script>
 
-  <title>混合精度和显存计算 | 摸鱼日记</title>
+  <title>位置编码 | 摸鱼日记</title>
   
 
 
@@ -202,7 +202,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://suhejian.github.io/2024/06/17/%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E5%92%8C%E6%98%BE%E5%AD%98%E8%AE%A1%E7%AE%97/">
+    <link itemprop="mainEntityOfPage" href="https://suhejian.github.io/2024/08/04/%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -215,7 +215,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          混合精度和显存计算
+          位置编码
         </h1>
 
         <div class="post-meta">
@@ -224,30 +224,24 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2024-06-17 20:35:40" itemprop="dateCreated datePublished" datetime="2024-06-17T20:35:40+08:00">2024-06-17</time>
+              <time title="创建时间：2024-08-04 19:44:51 / 修改时间：19:47:04" itemprop="dateCreated datePublished" datetime="2024-08-04T19:44:51+08:00">2024-08-04</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-07-03 21:25:50" itemprop="dateModified" datetime="2024-07-03T21:25:50+08:00">2024-07-03</time>
-              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="fa fa-folder-o"></i>
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0/" itemprop="url" rel="index">
-                    <span itemprop="name">深度学习</span>
+                  <a href="/categories/LLM/" itemprop="url" rel="index">
+                    <span itemprop="name">LLM</span>
                   </a>
                 </span>
             </span>
 
           
-            <div class="post-description">简要介绍了混合精度的概念，以此为基础评估了训练阶段和推理阶段各需要占用多少显存。针对ZeRO技术和KV Cache技术这里只是一笔带过，后续会详细介绍。</div>
+            <div class="post-description">本篇博客是对苏神博客的一个学习笔记，主要学习了绝对位置编码、相对位置编码和融合了两种位置编码的RoPE位置编码。RoPE在LLM中非常重要，需要重点掌握。</div>
 
         </div>
       </header>
@@ -258,117 +252,54 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h3 id="混合精度计算"><a href="#混合精度计算" class="headerlink" title="混合精度计算"></a>混合精度计算</h3><p>在深度学习中，常用<strong>混合精度计算</strong>来加速模型训练。举例来说，线性层或者卷积层在使用<code>float16</code>计算时速度要比使用<code>float32</code>快得多，而且这些算子对精度要求没有那么高；减法操作等算子则对精度有较高要求，一般需要<code>float32</code>精度。PyTorch提供自动混合精度（<code>torch.cuda.amp</code>）方法，尝试将每个操作和适当的数值类型匹配，以此减少模型的内存占用和训练时长。</p>
-<div class="table-container">
-<table>
-<thead>
-<tr>
-<th>数据类型</th>
-<th>符号占位</th>
-<th>指数占位</th>
-<th>尾数占位</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>fp16</code></td>
-<td>1</td>
-<td>5</td>
-<td>10</td>
-</tr>
-<tr>
-<td><code>bf16</code></td>
-<td>1</td>
-<td>8</td>
-<td>7</td>
-</tr>
-<tr>
-<td><code>fp32</code></td>
-<td>1</td>
-<td>8</td>
-<td>23</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>一般来说有以上三种浮点数类型，其中指数占位代表了浮点数表示的<strong>范围</strong>，尾数占位代表了浮点数表示的<strong>精度</strong>。</p>
-<p>当然，使用混合精度计算也不是没有缺点，需要搭配一些优化策略：</p>
-<ul>
-<li>梯度下溢<br>  在训练过程中，特别是在使用低精度浮点数（如<code>float16</code>）时，梯度可能会变得非常小，导致数值不稳定性，这种现象称为梯度下溢</li>
-<li>梯度缩放<br>  对于使用<code>float16</code>梯度的网络，梯度缩放在反向传播之前放大梯度，减少梯度下溢的问题，从而帮助网络更好地收敛</li>
-</ul>
-<p>混合精度计算的优缺点：</p>
-<ul>
-<li>优点<ul>
-<li>混合精度训练可以提高训练速度，减少内存使用</li>
-<li>同时使用<code>fp32</code>进行关键的计算，以保证准确性</li>
-</ul>
-</li>
-<li>缺点<ul>
-<li>混合精度训练可能会导致数值不稳定，特别是在模型梯度非常小或非常大的时候，还需要额外的校准步骤来确保<code>fp16</code>计算的准确性</li>
-</ul>
-</li>
-</ul>
-<h3 id="训练显存"><a href="#训练显存" class="headerlink" title="训练显存"></a>训练显存</h3><p>在模型训练时，除了存储模型权重需要占用显存，存储优化器状态、计算梯度也需要占用显存。所以训练占用的显存要比推理时更多。</p>
-<h4 id="模型权重"><a href="#模型权重" class="headerlink" title="模型权重"></a>模型权重</h4><p>如果全部使用<code>fp32</code>精度的浮点数类型，那么显存占用和模型参数存在这样的关系：</p>
-<script type="math/tex; mode=display">Memory_{model}=(4 \, bytes / param) * (No.params)</script><p>如果全部使用<code>fp16</code>精度的浮点数类型，那么显存占用和模型参数存在这样的关系：</p>
-<script type="math/tex; mode=display">Memory_{model}=(2 \, bytes / param) * (No.params)</script><p>而如果使用混合精度，显存占用和模型参数的关系如下：</p>
-<script type="math/tex; mode=display">Memory_{model}=(2 \, bytes / param) * (No.params)</script><p>还要再加上<strong>优化器状态</strong>中的<code>fp32</code>版本的模型参数，只不过不放在这里计算，放到优化器状态中计算。</p>
-<h4 id="梯度"><a href="#梯度" class="headerlink" title="梯度"></a>梯度</h4><p>梯度既可以使用<code>fp32</code>类型也可以使用<code>fp16</code>类型，不过一般和模型的数据类型一致。</p>
-<p>所以如果是<code>fp32</code>类型，显存占用关系如下：</p>
-<script type="math/tex; mode=display">Memory_{gradients} = (4 \, bytes / param) * (No.params)</script><p>如果是<code>fp16</code>类型，显存占用关系如下：</p>
-<script type="math/tex; mode=display">Memory_{gradients} = (2 \, bytes / param) * (No.params)</script><h4 id="优化器状态"><a href="#优化器状态" class="headerlink" title="优化器状态"></a>优化器状态</h4><p>在优化器更新模型参数时，会使用<code>float32</code>类型的优化器状态、<code>float32</code>类型的梯度和<code>float32</code>类型的模型参数来更新。</p>
-<p>选择不同的优化器，对显存的占用是不一样的：</p>
-<ul>
-<li><p>AdamW：$Memory_{optimizer} = (16 \, bytes / param) * (No.params)$</p>
-<ul>
-<li><code>fp32</code>版本的模型参数：$4 \, bytes / param$</li>
-<li><code>fp32</code>版本的梯度：$4 \, bytes / param$</li>
-<li>一阶动量：$4 \, bytes / param$</li>
-<li>二阶动量：$4 \, bytes / param$</li>
-</ul>
-</li>
-<li><p>8-bit的优化器，如<code>bitsandbytes</code>：$Memory_{optimizer} = (10 \, bytes / param) * (No.params)$</p>
-<ul>
-<li><code>fp32</code>版本的模型参数：$4 \, bytes / param$</li>
-<li><code>fp32</code>版本的梯度：$4 \, bytes / param$</li>
-<li>一阶动量：$1 \, bytes / param$</li>
-<li>二阶动量：$1 \, bytes / param$</li>
-</ul>
-</li>
-<li><p>带动量的SGD优化器：$Memory_{optimizer} = (12 \, bytes / param) * (No.params)$</p>
-<ul>
-<li><code>fp32</code>版本的模型参数：$4 \, bytes / param$</li>
-<li><code>fp32</code>版本的梯度：$4 \, bytes / param$</li>
-<li>动量：$4 \, bytes / param$</li>
-</ul>
-</li>
-</ul>
-<hr>
-<p>当然在实际训练时，还需要存储中间激活值以便在反向传播计算梯度时使用。这里的激活指的是<strong>前向传播过程中计算得到，并在反向传播过程中需要用到的所有张量</strong>。这里的激活不包含模型参数和优化器状态，但是包含了Dropout操作需要用到的mask矩阵。中间激活值和输入数据的大小（批次大小和序列长度）是成正相关的。</p>
-<p>当我们训练神经网络遇到显存不足（OOM，Out Of Memory）问题时，通常会尝试减小批次大小来避免显存不足的问题，这种方式减少的其实是中间激活占用的显存，而不是模型参数、梯度和优化器的显存。</p>
-<p>总得来说，训练时需要的显存来自多个方面：</p>
-<script type="math/tex; mode=display">Total \, Memory_{Training} = Model \, Memory + Optimizer \, Memory + Activation  \, Memory + Gradient \, Memory</script><p>对于大模型来说，需要的显存实在是太大，即使是一张A100（80G显存）也不可能存放得下所有参数。因此DeepSpeed提出了ZeRO的分布式训练方法：</p>
-<ul>
-<li>ZeRO-1<script type="math/tex; mode=display">Total \, Memory_{Training} \approx Model \, Memory + \frac{Optimizer \, Memory}{No.GPUs} + Activation \, Memory + Gradient \, Memory</script></li>
-<li>ZeRO-2<script type="math/tex; mode=display">Total \, Memory_{Training} \approx Model \, Memory +  Activation \, Memory + \frac{Optimizer \, Memory + Gradient \, Memory}{No.GPUs}</script></li>
-<li>ZeRO-3<script type="math/tex; mode=display">Total \, Memory_{Training} \approx Activation \, Memory + \frac{Model \, Memory + Optimizer \, Memory + Gradient \, Memory}{No.GPUs} + (ZeRO-3 \, Live \, Params)</script></li>
-</ul>
-<h3 id="推理显存"><a href="#推理显存" class="headerlink" title="推理显存"></a>推理显存</h3><p>神经网络推理阶段，没有优化器状态和梯度，也不需要保存中间激活，此时占用的显存要远小于训练阶段。</p>
-<p>在模型推理时，显存占用分为两部分：1）存放模型的权重和前向传播时需要的一小部分额外参数，如输入数据需要放在GPU上；2）存放模型的KV Cache，这部分不仅依赖模型的参数大小，还依赖模型的输入长度，会在推理过程中动态增长。当context长度足够长时，第二部分的显存大小就会占据主导地位，导致Out Of Memory问题。</p>
-<p>典型的大模型推断包含了两个阶段：</p>
+        <p>纯粹的Attention模块是无法捕捉输入顺序的，因此对于Transformer模型来说，加入<strong>位置编码</strong>是非常必要的，否则模型无法区分不同位置的token。为此，大体有两个选择：</p>
 <ol>
-<li>预填充阶段：输入一个prompt，为每个transformer层生成key cache和value cache（KV Cache）</li>
-<li>解码阶段：使用并更新KV cache，一个接一个地生成token</li>
+<li>绝对位置编码<br> 将位置信息融入到输入中</li>
+<li>相对位置编码<br> 调整Attention结构，使其能够分辨不同位置的token</li>
 </ol>
-<p>在GPU上部署模型的原则是：能一张卡部署，就不要跨多张卡；能一台机器部署，就不要跨多台机。这是因为<strong>卡内通信带宽 &gt; 卡间通信带宽 &gt; 机间通信带宽</strong>，模型部署时跨的设备越多，受设备通信带宽的拖累就越大。</p>
-<p>所以，减少KV Cache可以实现在更少的设备上推理更长的context，或者在相同的context长度下让推理的batch size更大，从而实现更快的推理速度或者更大的吞吐量。FlashAttention就是优化了KV Cache，从而实现了更低的推理成本。</p>
+<h2 id="绝对位置编码"><a href="#绝对位置编码" class="headerlink" title="绝对位置编码"></a>绝对位置编码</h2><p>一般来说，绝对位置编码会加到输入中：在输入的第$k$个向量$x_k$中加入位置向量$p_k$，此时输入由$x_k$变成$x_k+p_k$，其中$p_k$只依赖于位置编号$k$。</p>
+<h3 id="训练式"><a href="#训练式" class="headerlink" title="训练式"></a>训练式</h3><p>最朴素的绝对位置编码就是<strong>直接将位置编码当作可训练参数</strong>，比如最大长度为512，编码维度为768，那么就初始化一个$512 \times 768$的矩阵作为位置向量，让它随着训练过程更新。BERT和GPT等模型就是用的这种位置编码。</p>
+<p>对于这种训练式的绝对位置编码，一般认为它的缺点是<strong>没有外推性</strong>，即如果预训练最大长度为512的话，那么最多只能处理长度为512的句子，再长就处理不了了。当然，也可以将超过512的位置向量随机初始化，然后继续微调。</p>
+<h3 id="三角函数式"><a href="#三角函数式" class="headerlink" title="三角函数式"></a>三角函数式</h3><p>三角函数式位置编码也即<strong>Sinusoidal位置编码</strong>，也是<code>Attention is All You Need</code>中提出的显式解：</p>
+<script type="math/tex; mode=display">
+p_{k, 2i} = sin(k/10000^{2i / d}) \\
+p_{k, 2i+1} = cos(k / 10000^{2i / d})</script><p>其中$p_{k,2i}$和$p_{k,2i+1}$分别是位置$k$的编码向量的第$2i$，$2i+1$个分量，$d$是位置向量的维度。</p>
+<p>三角函数式位置编码具有显式的生成规律，因此可以期望它具有一定的外推性。此外，由于$sin(\alpha + \beta) = sin(\alpha)cos(\beta) + cos(\alpha)sin(\beta)$和$cos(\alpha + \beta) = cos(\alpha)cos(\beta) - sin(\alpha)sin(\beta)$，这表明位置$\alpha + \beta$的向量可以表示成位置$\alpha$和位置$\beta$的向量组合，这提供了表达相对位置信息的可能性。</p>
+<h3 id="递归式"><a href="#递归式" class="headerlink" title="递归式"></a>递归式</h3><p>原则上说，RNN不需要位置编码，它在结构上自带了学习到位置信息的可能性。因此，如果在输入后面先接一层RNN，然后再接Transformer，那么理论上就不需要再加位置编码了。</p>
+<p>我们可以用RNN模型来学习一种绝对位置编码，比如从一个向量$p_0$出发，通过递归公式$p_{k+1}=f(p_k)$来得到各个位置的编码向量。</p>
+<h2 id="相对位置编码"><a href="#相对位置编码" class="headerlink" title="相对位置编码"></a>相对位置编码</h2><p>相对位置并没有完整建模每个输入的位置信息，而是在计算Attention时考虑当前位置与被Attention位置的<strong>相对距离</strong>。由于自然语言一般更依赖于相对位置，所以相对位置编码通常有着优秀的表现。</p>
+<h3 id="经典式"><a href="#经典式" class="headerlink" title="经典式"></a>经典式</h3><p>Google在论文<code>Self-Attention with Relative Position Representations</code>中首次提出了相对位置编码。</p>
+<p>计算$q_ik_j^T$的方式如下：</p>
+<p>$q_ik_j^T=(x_i+p_i)W_QW_K^T{(x_j+p_j)}^T=(x_iW_Q+p_iW_Q)(W_K^Tx_j^T+W_K^Tp_j^T)$</p>
+<p>为了引入相对位置信息，Google把第一项位置去掉，第二项$p_jW_K$改为<strong>二元位置向量</strong>$R_{i,j}^{K}$，那么注意力分数$a_{i,j}$变成：</p>
+<script type="math/tex; mode=display">
+a_{i,j}=softmax(x_iW_Q(x_jW_K+R_{i,j}^{K})^T)</script><p>此外，将$o_i=\sum_ja_{i,j}v_j=\sum_ja_{i,j}(x_jW_V+p_jW_V)$中的$p_jW_V$换成$R_{i,j}^{V}$：</p>
+<script type="math/tex; mode=display">
+o_i = \sum_ja_{i,j}(x_jW_V + R_{i,j}^{V})</script><p>相对位置就是将原本依赖于二元坐标$(i,j)$的向量<br>$R_{i,j}^K$和$R_{i,j}^V$改为只依赖于相对距离$i-j$，并且通常来说会进行截断以适应不同任意的距离：</p>
+<script type="math/tex; mode=display">
+R_{i,j}^{K} = p_K[clip(i-j, p_{min}, p_{max})] \\
+R_{i,j}^{V} = p_V[clip(i-j, p_{min}, p_{max})]</script><p>这样只需要有限的位置编码，就可以表达出任意长度的相对位置。</p>
+<h3 id="T5式"><a href="#T5式" class="headerlink" title="T5式"></a>T5式</h3><p>如果分析每一项的含义，那么可以分别理解为“输入-输入”，“输入-位置”，“位置-输入”和“位置-位置”四项注意力的组合。如果认为输入信息和位置信息是解耦的，那么它们就不应该有过多的交互，所以“输入-位置”和“位置-输入”两项Attention可以删掉。而$p_iW_QW_K^Tp_j^T$实际上只是一个依赖于$(i,j)$的标量，可以直接将它作为参数训练出来，即简化为：</p>
+<script type="math/tex; mode=display">
+x_iW_QW_K^Tx_j^T+\beta_{i,j}</script><p>其实它就是在Attention矩阵的基础上<strong>添加一个可训练的偏置项</strong>。</p>
+<p>此外，XLNet和DeBERTa也对位置编码进行了改进，可参考苏剑林的<a target="_blank" rel="noopener" href="https://kexue.fm/archives/8130">博客</a>。</p>
+<h2 id="融合式"><a href="#融合式" class="headerlink" title="融合式"></a>融合式</h2><p>苏剑林基于<strong>通过绝对位置编码的方式实现相对位置编码</strong>这个出发点提出了RoPE，即旋转位置编码，将绝对位置编码和相对位置编码融于一体。RoPE位置编码通过将一个向量旋转某个角度，为其赋予位置信息。</p>
+<p>首先，对于两个复数$q$和$k$的内积而言，存在以下公式：</p>
+<script type="math/tex; mode=display">
+<q,k> = Re[qk^{*}]</script><p>其中$*$是共轭复数，右端的乘法是普通的复数乘法，$Re[]$表示取结果的实部。也就是说，两个二维向量的内积，等于把它们当成复数看待时，一个复数与另一个复数的共轭的乘积实部。</p>
+<p>假设$q_m$和$k_n$是所在位置分别为$m$和$n$的二维行向量，如果给它们分别乘以$e^{im\theta}$和$e^{in\theta}$，那么就相当于给它们添加了绝对位置编码了（因为显式地依赖绝对位置$m$和$n$），然后放到内积中，就有：</p>
+<script type="math/tex; mode=display">
+<q_me^{im\theta},k_ne^{in\theta}>=Re[(q_me^{im\theta})(k_ne^{in\theta})^{*}]=Re[q_mk_n^*e^{i(m-n)\theta}]</script><p>也就是说，内积只依赖于相对位置$m-n$，这就巧妙地将绝对位置和相对位置融合在一起了。</p>
+<p>根据欧拉公式$e^{ix}=cos(x)+i*sin(x)$，我们可以得到：</p>
+<script type="math/tex; mode=display">
+(x+yi)e^{in\theta} = (x*cos(n\theta) - y * sin(n\theta)) + i * (x * sin(n\theta) + y * cos(n \theta))</script><p>也就是说，通过</p>
+<script type="math/tex; mode=display">
+\binom{x}{y} -> \binom{x * cos(n\theta) - y * sin(n\theta)}{x * sin(n\theta) + y * cos(n\theta)} = \binom{x}{y} cos(n\theta) + \binom{-y}{x} sin(n\theta)</script><p>赋予$[x,y]$绝对位置信息，那么在Attention运算的时候也等价于相对位置编码。如果是多于二维的向量，那么可以考虑每两维为一组进行同样的运算，每一组的$\theta$可以不一样。这样一来，我们就得到一种融合了绝对位置和相对位置于一体的位置编码方案。</p>
 <p>【参考文献】</p>
 <ol>
-<li><a target="_blank" rel="noopener" href="https://blog.eleuther.ai/transformer-math/">Transformer 101 Math</a></li>
-<li><a target="_blank" rel="noopener" href="https://kipp.ly/transformer-inference-arithmetic/">Transformer Inference Arithmetic</a></li>
-<li><a target="_blank" rel="noopener" href="https://pytorch.org/tutorials/recipes/recipes/amp_recipe.html">PyTorch Document</a></li>
-<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/624740065">分析transformer模型的参数量、计算量、中间激活、KV cache</a></li>
+<li><a target="_blank" rel="noopener" href="https://kexue.fm/archives/8130">让研究人员绞尽脑汁的Transformer位置编码</a></li>
+<li><a target="_blank" rel="noopener" href="https://kexue.fm/archives/8265">Transformer升级之路：2、博采众长的旋转式位置编码</a></li>
+<li><a target="_blank" rel="noopener" href="https://fancyerii.github.io/2023/09/15/rope/">RoPE论文解读</a></li>
 </ol>
 
     </div>
@@ -385,13 +316,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2024/06/15/LLM%E6%97%B6%E4%BB%A3%E7%9A%84Normalization/" rel="prev" title="LLM时代的Normalization">
-      <i class="fa fa-chevron-left"></i> LLM时代的Normalization
+    <a href="/2024/08/04/QAnything%E6%9E%B6%E6%9E%84%E5%AD%A6%E4%B9%A0/" rel="prev" title="QAnything架构学习">
+      <i class="fa fa-chevron-left"></i> QAnything架构学习
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2024/06/17/%E5%9F%BA%E4%BA%8ETransformer%E7%9A%84%E7%BB%8F%E5%85%B8%E6%A8%A1%E5%9E%8B/" rel="next" title="基于Transformer的经典模型">
-      基于Transformer的经典模型 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -451,7 +379,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%B7%E5%90%88%E7%B2%BE%E5%BA%A6%E8%AE%A1%E7%AE%97"><span class="nav-text">混合精度计算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E6%98%BE%E5%AD%98"><span class="nav-text">训练显存</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E6%9D%83%E9%87%8D"><span class="nav-text">模型权重</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A2%AF%E5%BA%A6"><span class="nav-text">梯度</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E5%99%A8%E7%8A%B6%E6%80%81"><span class="nav-text">优化器状态</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A8%E7%90%86%E6%98%BE%E5%AD%98"><span class="nav-text">推理显存</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%9D%E5%AF%B9%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81"><span class="nav-text">绝对位置编码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%AD%E7%BB%83%E5%BC%8F"><span class="nav-text">训练式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%89%E8%A7%92%E5%87%BD%E6%95%B0%E5%BC%8F"><span class="nav-text">三角函数式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%92%E5%BD%92%E5%BC%8F"><span class="nav-text">递归式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B8%E5%AF%B9%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81"><span class="nav-text">相对位置编码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%8F%E5%85%B8%E5%BC%8F"><span class="nav-text">经典式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#T5%E5%BC%8F"><span class="nav-text">T5式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%9E%8D%E5%90%88%E5%BC%8F"><span class="nav-text">融合式</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://suhejian.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.1',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":true},
+    copycode: {"enable":true,"show_result":true,"style":null},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":true,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="FlashAttention和PagedAttention是目前主流的两种LLM加速推理算法，了解两者的工作原理有助于更深入地理解LLM。同时，FlashAttention和PagedAttention是两个主流推理加速框架FlashAttention和vLLM的核心算法，了解两者的原理可以帮助更好地使用vLLM和FlashAttention。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="FlashAttention与PagedAttention">
+<meta property="og:url" content="https://suhejian.github.io/2024/08/04/FlashAttention%E4%B8%8EPagedAttention/index.html">
+<meta property="og:site_name" content="摸鱼日记">
+<meta property="og:description" content="FlashAttention和PagedAttention是目前主流的两种LLM加速推理算法，了解两者的工作原理有助于更深入地理解LLM。同时，FlashAttention和PagedAttention是两个主流推理加速框架FlashAttention和vLLM的核心算法，了解两者的原理可以帮助更好地使用vLLM和FlashAttention。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-08-04T09:57:31.000Z">
+<meta property="article:modified_time" content="2024-08-04T12:03:15.854Z">
+<meta property="article:author" content="suhejian">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://suhejian.github.io/2024/08/04/FlashAttention%E4%B8%8EPagedAttention/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>FlashAttention与PagedAttention | 摸鱼日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">摸鱼日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">输出倒逼思考</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">18</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <a href="https://github.com/suhejian" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://suhejian.github.io/2024/08/04/FlashAttention%E4%B8%8EPagedAttention/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="suhejian">
+      <meta itemprop="description" content="Stay hungry, stay foolish.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="摸鱼日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          FlashAttention与PagedAttention
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-08-04 17:57:31 / 修改时间：20:03:15" itemprop="dateCreated datePublished" datetime="2024-08-04T17:57:31+08:00">2024-08-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LLM/" itemprop="url" rel="index">
+                    <span itemprop="name">LLM</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">FlashAttention和PagedAttention是目前主流的两种LLM加速推理算法，了解两者的工作原理有助于更深入地理解LLM。同时，FlashAttention和PagedAttention是两个主流推理加速框架FlashAttention和vLLM的核心算法，了解两者的原理可以帮助更好地使用vLLM和FlashAttention。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>模型的计算速度除了与<strong>每秒浮点运算次数</strong>（FLOPS，Floating Point Operations Per Second）有很大关系，同时与<strong>存储访问开销</strong>（MAC，Memory Access Cost）也有关。尤其是当计算本身已经很高效的情况下，存储访问开销更加不可忽略。</p>
+<p>存储访问开销主要来自两个方面：</p>
+<ul>
+<li>从存储中读取数据</li>
+<li>向存储中写数据</li>
+</ul>
+<p>与CPU的情况类似，在GPU中当需要计算时，要从显存中读取数据并由计算单元进行计算操作；计算单元完成计算之后，再将结果写入显存中。因此可以将计算分为两类：1）计算密集型。整个计算的耗时主要在于计算本身，对于显存的读写几乎可以忽略，典型的计算包括大矩阵乘法、通道维度较大的卷积操作等。2）存储访问密集型。整个计算的耗时主要集中在存储的访问上，计算本身耗时很短，典型的计算包括逐元素操作（ReLU，Dropout等）以及Reduce操作（求和、softmax和BatchNorm等）。</p>
+<p>在绝大多数神经网络中，因为含有大量的<strong>存储访问密集型</strong>操作，所以存储访问开销都不能忽略不计。但是绝大多数Efficient Transformer都忽略了存储访问开销，所以即使它们整体的FLOPS降低了，但是计算耗时并没有降低。</p>
+<h2 id="Flash-Attention"><a href="#Flash-Attention" class="headerlink" title="Flash Attention"></a>Flash Attention</h2><blockquote>
+<p>虽然目前Transformer已经成为深度学习领域最广泛的架构，但是由于其固有的O(N^2)复杂度和内存限制的键值缓存，在推理过程中表现出次优效率。</p>
+</blockquote>
+<p>特别是对于长序列来说，这种高复杂度使得模型的实际部署变得复杂，这就是大模型在发展初期其输入输出往往只支持2K或者4K长度的原因。基于Transformer的大模型不能处理长序列的本质原因就是，<strong>Transformer的计算复杂度和空间复杂度随着序列长度N呈二次方增长</strong>。具体计算可以参考<a target="_blank" rel="noopener" href="https://kexue.fm/archives/8610">苏剑林的博客</a>。</p>
+<p>GPU中存储单元主要有HBM和SRAM，HBM容量大但是访问速度慢，SRAM容量小却有着较高的访问速度。例如，A100 GPU有40-80GB的HBM，带宽为1.5~2.0TB/s；每108个流式多核处理器各有192KB的片上SRAM，带宽估计约为19TB/s。可以看出，片上的SRAM比HBM快一个数量级，但是尺寸要小许多数量级。</p>
+<p>FlashAttention是一种基于GPU硬件对attention的优化技术，它的加速原理是，通过利用更高速的上层存储计算单元，减少对低速、更下层存储器的访问次数，从而提升模型的训练性能。也就是说Flash Attention的目的<strong>不是节约FLOPS</strong>，而是减少对HBM的访问，即<strong>降低存储访问开销</strong>。重点是Flash Attention在训练和预测过程中的结果和标准Attention是一样的，对用户是无感的，而其它加速方法做不到这一点。</p>
+<h3 id="标准Attention计算"><a href="#标准Attention计算" class="headerlink" title="标准Attention计算"></a>标准Attention计算</h3><p>首先，从HBM中读取完整的$Q$和$K$矩阵（大小均为$n \times d$），计算点积得到相似度得分$S$（大小为$n \times n$），需要进行$O(n * d + n^2)$次HBM访问。</p>
+<p>其次，计算注意力权重$P$（大小为$n \times n$）时，需要对相似度得分$S$进行Softmax操作，这需要进行$O(n^2)$次HBM访问。</p>
+<p>最后，将注意力权重$P$和值向量$V$（每个大小为$n \times d$）加权求和得到输出向量$O$（大小为$n \times d$）时，需要进行$O(n * d)$次HBM访问。</p>
+<p>因此，标准Attention算法的HBM访问总次数为$O(n * d + n ^ 2)$。当$n$比较大时，总的HBM访问次数会比较多。</p>
+<p>标准的Attention算法在GPU内存分级存储的架构下，<strong>存在以下缺陷</strong>：</p>
+<ul>
+<li>对HBM过多的访问，如注意力得分$S$和注意力权重$P$需要在存入HMB之后又立即被访问，由于HBM带宽较低，这会导致算法性能受限</li>
+<li>注意力得分$S$和注意力权重$P$需要占用$O(n^2)$的存储空间，显存占用较高</li>
+</ul>
+<p>我们可以从以下思路出发：</p>
+<ol>
+<li>之所以需要大量访问HBM，一个原因就是Attention的计算中存在三个Kernel，每个Kernel的计算过程都存在从HBM读取数据，计算完成之后又要写会HBM。如果将三个Kernel融合为一个，则可以减少部分访问HBM的次数。</li>
+<li>在计算过程中，要尽量利用SRAM进行计算，避免访问HBM操作。</li>
+</ol>
+<p>但是SRAM的带宽虽然很大，它的计算可存储的数据量较小，如果采取<strong>分治策略</strong>将数据进行Tilling处理放到SRAM中计算，会导致长序列被截断，标准的Softmax无法正常工作。</p>
+<h3 id="FlashAttention计算"><a href="#FlashAttention计算" class="headerlink" title="FlashAttention计算"></a>FlashAttention计算</h3><p>Flash Attention的实现主要在两点：</p>
+<ul>
+<li>平铺（Tilling）<br>  将原始的注意力矩阵分解为更小的子矩阵，然后分别对这些子矩阵进行计算，只要这个子矩阵的大小可以存放在SRAM中，那么就可以在计算过程中只访问SRAM了。<br>  前向传播和反向传播时，都使用</li>
+<li>重算（Recomputation）<br>  重算是深度学习优化中的常见概念，以算力换内存，不要存储那么多梯度和每一层正向传播的中间状态，而是在计算到反向传播的某一层时再临时从头开始重新计算正向传播的中间状态。<br>  仅在反向传播时使用</li>
+</ul>
+<p>对于矩阵乘法而言，可以直接通过分块来达到分块计算的目的，但是self-attention中有softmax计算，softmax的分母包含与所有元素相关的求和项，所以对self-attention进行分块计算的真正难点在于对softmax的分块计算。Flash Attention提出了<strong>分块Softmax</strong>算法，确保了整个算法的正确性，这也是Flash Attention的核心。</p>
+<p><strong>分块Softmax算法</strong>：</p>
+<p>假设有维度为$D$的向量$x \in \mathbb{R}^D$，对于向量$x$的softmax的计算公式如下：</p>
+<script type="math/tex; mode=display">
+softmax(x_i) = \frac{e^{x_i}}{\sum_{j=1}^{D}e^{x_j}}</script><p>其中$x_i$为向量$x$的第$i$个分量。</p>
+<p>因为softmax的计算公式中含有指数项，当$x_i$较大时指数项$e^{x_i}$也会很大，从而在计算中出现溢出。为了避免溢出，大多数深度学习框架中都使用了softmax的稳定版本，稳定版的softmax的计算如下：</p>
+<script type="math/tex; mode=display">
+m(x) = max([x_1, x_2, ..., x_D]) \\
+f(x) = [e^{x_1 - m(x)}, ..., e^{x_D-m(x)}] \\
+softmax(x) = \frac{f(x)}{\sum _j f(x)_j}</script><p>其中分子$f(x)$是向量，分母$\sum _j f(x)_j$是标量，所以这里的除法是<strong>逐元素相除</strong>。</p>
+<p>直觉上，softmax难以分块计算的主要原因是它的分母依赖于输入向量$x$中的每一个值。</p>
+<p>如果我们将一个向量进行分块，那么在分块计算中我们可以得到<strong>局部softmax</strong>，这个局部的softmax显然不是最终结果，但是我们可以保存它对应的分子（局部最大值）和分母（局部EXP求和项）。同时我们需要维护一个<strong>全局最大值</strong>和<strong>全局EXP求和项</strong>。在进行后续的分块计算时，我们需要根据此时的局部最大值和局部EXP求和项，更新全局最大值和全局EXP求和项，然后再处理下一个分块，然后再更新。当处理完所有分块之后，此时的所有分块的softmax值都是全局的。详细推导过程可参考<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/611236756/answer/3132304304">这篇博客</a>。</p>
+<h2 id="Paged-Attention"><a href="#Paged-Attention" class="headerlink" title="Paged Attention"></a>Paged Attention</h2><p>vLLM主要用于LLM推理服务，其核心是Paged Attention，这是一种新颖的注意力算法，它将操作系统的虚拟内存中分页的经典思想引入到LLM服务中，可以有效地管理大语言模型的注意力内存，从而提升大模型的吞吐量和内存使用效率。vLLM的吞吐量可以达到HuggingFace实现的24倍，文本生成推理（TGI）性能高出3.5倍，且不需要对模型结构进行任何修改。</p>
+<p>Paged Attention允许在<strong>不连续的内存空间</strong>中<strong>存储连续的keys和values</strong>，通过将每个序列的KV cache划分为块，每个块包含固定数量的tokens的keys和values。在注意力计算期间，Paged Attention内核可以有效地识别和获取这些块。因为块在内存中不需要连续，因而可以用一种更加灵活的方式管理key和value，就像在操作系统的虚拟内存中一样：将块视为页面，将token视为字节，将序列视为进程。序列的连续逻辑块通过块表映射到非连续物理块中，物理块在生成新的token时按需分配。这种方式可以更灵活地对KV Cache进行管理，内存浪费只会发生在序列的最后一个块中，这使得在实践中可以实现接近最佳的内存使用，仅浪费不到4%。通过这样的策略，系统将更多序列进行批处理，提高GPU使用率，显著提升吞吐量。可参考<a target="_blank" rel="noopener" href="https://blog.vllm.ai/2023/06/20/vllm.html">官方博客</a>提供的动图进一步了解细节。</p>
+<p>此外，Paged Attention还有另一个关键优势——<strong>高效的内存共享</strong>。例如，在并行采样中多个输出序列是由同一个prompt生成的，在这种情况下，prompt的计算和内存可以在输出序列中共享。</p>
+<p>Paged Attention的内存共享大大减少了复杂采样算法的内存开销，例如并行采样和集束搜索的内存使用量降低了55%。这可以转化为高达2.2倍的吞吐量提升。这种采样方法也在LLM服务中变得实用起来。Paged Attention是vLLM背后的核心技术。</p>
+<p>【参考文献】</p>
+<ol>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/672698614">通俗易懂聊flashAttention的加速原理</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhihu.com/question/611236756/answer/3132304304">FlashAttention的速度优化原理是怎么样的？</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/661152161">Attention优化：Flash Attn和Paged Attn，MQA以及GQA</a></li>
+<li><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/638468472">LLM（十七）：从 FlashAttention 到 PagedAttention, 如何进一步优化 Attention 性能</a></li>
+<li><a target="_blank" rel="noopener" href="https://blog.vllm.ai/2023/06/20/vllm.html">vLLM: Easy, Fast, and Cheap LLM Serving with PagedAttention</a></li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/08/04/%E6%B7%B1%E5%BA%A6%E5%AD%A6%E4%B9%A0%E8%B0%83%E5%8F%82%E6%8A%80%E5%B7%A7/" rel="prev" title="深度学习调参技巧">
+      <i class="fa fa-chevron-left"></i> 深度学习调参技巧
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/08/04/QAnything%E6%9E%B6%E6%9E%84%E5%AD%A6%E4%B9%A0/" rel="next" title="QAnything架构学习">
+      QAnything架构学习 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Flash-Attention"><span class="nav-text">Flash Attention</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%87%E5%87%86Attention%E8%AE%A1%E7%AE%97"><span class="nav-text">标准Attention计算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#FlashAttention%E8%AE%A1%E7%AE%97"><span class="nav-text">FlashAttention计算</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Paged-Attention"><span class="nav-text">Paged Attention</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">suhejian</p>
+  <div class="site-description" itemprop="description">Stay hungry, stay foolish.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">18</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/suhejian" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;suhejian" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">suhejian</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v7.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.1
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

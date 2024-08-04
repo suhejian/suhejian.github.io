@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+
+<script id="hexo-configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    hostname: new URL('https://suhejian.github.io').hostname,
+    root: '/',
+    scheme: 'Mist',
+    version: '7.7.1',
+    exturl: false,
+    sidebar: {"position":"left","display":"post","padding":18,"offset":12,"onmobile":true},
+    copycode: {"enable":true,"show_result":true,"style":null},
+    back2top: {"enable":true,"sidebar":true,"scrollpercent":true},
+    bookmark: {"enable":true,"color":"#222","save":"auto"},
+    fancybox: false,
+    mediumzoom: false,
+    lazyload: false,
+    pangu: false,
+    comments: {"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},
+    algolia: {
+      appID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    },
+    localsearch: {"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},
+    path: 'search.xml',
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}
+  };
+</script>
+
+  <meta name="description" content="本文是对网易有道开源的RAG框架QAnything的一个学习笔记，感谢QAnything框架让更多人可以接触到RAG应用。QAnything整体采用了两阶段检索的方案，实现了知识库越大，RAG效果越好的愿景，是非常值得学习的RAG框架。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="QAnything架构学习">
+<meta property="og:url" content="https://suhejian.github.io/2024/08/04/QAnything%E6%9E%B6%E6%9E%84%E5%AD%A6%E4%B9%A0/index.html">
+<meta property="og:site_name" content="摸鱼日记">
+<meta property="og:description" content="本文是对网易有道开源的RAG框架QAnything的一个学习笔记，感谢QAnything框架让更多人可以接触到RAG应用。QAnything整体采用了两阶段检索的方案，实现了知识库越大，RAG效果越好的愿景，是非常值得学习的RAG框架。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-08-04T10:07:59.000Z">
+<meta property="article:modified_time" content="2024-08-04T11:51:36.714Z">
+<meta property="article:author" content="suhejian">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://suhejian.github.io/2024/08/04/QAnything%E6%9E%B6%E6%9E%84%E5%AD%A6%E4%B9%A0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome: false,
+    isPost: true
+  };
+</script>
+
+  <title>QAnything架构学习 | 摸鱼日记</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">摸鱼日记</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">输出倒逼思考</p>
+  </div>
+
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档<span class="badge">18</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="popup search-popup">
+    <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="none"
+           placeholder="搜索..." spellcheck="false"
+           type="text" id="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result"></div>
+
+</div>
+<div class="search-pop-overlay"></div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <a href="https://github.com/suhejian" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://suhejian.github.io/2024/08/04/QAnything%E6%9E%B6%E6%9E%84%E5%AD%A6%E4%B9%A0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="suhejian">
+      <meta itemprop="description" content="Stay hungry, stay foolish.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="摸鱼日记">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          QAnything架构学习
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-08-04 18:07:59 / 修改时间：19:51:36" itemprop="dateCreated datePublished" datetime="2024-08-04T18:07:59+08:00">2024-08-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/LLM/" itemprop="url" rel="index">
+                    <span itemprop="name">LLM</span>
+                  </a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">本文是对网易有道开源的RAG框架QAnything的一个学习笔记，感谢QAnything框架让更多人可以接触到RAG应用。QAnything整体采用了两阶段检索的方案，实现了知识库越大，RAG效果越好的愿景，是非常值得学习的RAG框架。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>QAnything系统的工作流程主要包含三个环节：</p>
+<ul>
+<li><p><strong>索引（indexing）</strong>：文本索引的构建包括以下步骤：文档解析、文本分块、Embedding向量化和创建索引。先将不同格式的原始文件解析转换为纯文本，再把文本切分成较小的文本块。通过Embedding为每一个文本块生成一个向量表示，用于计算<strong>文本向量</strong>和<strong>问题向量</strong>之间的相似度。创建索引将原始文本块和Embedding向量以键值对的形式存储，以便将来进行快速和频繁的搜索。</p>
+</li>
+<li><p><strong>检索（Retrieval）</strong>：使用Embedding模型将用户输入问题转换为向量，计算<strong>问题的Embedding向量</strong>和<strong>语料库中文本块Embedding向量</strong>之间的相似度，选择相似度最高的前K个文档块作为当前问题的增强上下文信息。</p>
+</li>
+<li><p><strong>生成（Generation）</strong>：将检索得到的前K个文本块和用户问题一起送进大模型，让大模型基于给定的文本块来回答用户的问题。</p>
+</li>
+</ul>
+<h2 id="检索器"><a href="#检索器" class="headerlink" title="检索器"></a>检索器</h2><p><strong>期望检索器达到的效果</strong></p>
+<ol>
+<li>具备将不同语种的翻译文本做关联的能力（跨语种检索能力）</li>
+<li>具备将长原文和短摘要进行关联的能力</li>
+<li>具备将不同表述但相同语义的文本做关联的能力</li>
+<li>具备将表述不同但意图相同的问题进行关联的能力</li>
+<li>具备将问题和可能的答案文本进行关联的能力</li>
+<li>检索出尽可能多的相关片段，并且真正有用的片段应该在更靠前的位置</li>
+</ol>
+<p>RAG中检索的业务目标是，找出用户问题相关的片段，此时不仅要检索该问题的<strong>答案相关</strong>的片段，也要检索该问题<strong>相似问题</strong>，因为相似问题的上下文常常含有原问题的答案相关内容。所以训练过程中，需要将RAG需要检索的目标设置为正例（这个目标可能是相似问题，可能是对应答案，可能是短摘要对应的原长文，也可能是相关的推理过程）。</p>
+<p><strong>为什么QAnything要训练自己的Embedding模型？</strong></p>
+<ol>
+<li><p>开源的Embedding模型效果并不如宣传的那么好，它们在<a target="_blank" rel="noopener" href="https://huggingface.co/spaces/mteb/leaderboard">MTEB</a>榜单上可能分数很高，但是这并不能反映真实的效果</p>
+</li>
+<li><p>网易有道的业务场景有很多混合语言的情况，比如知识库里存放的是英文文档，但是用户希望得到中文回复，这种跨语种的能力，现有模型支持不好</p>
+</li>
+<li><p>单纯的Embedding在检索排序上天花板比较低，所以需要在Embedding基础上增加Reranker，共享同样的底座，但是head不一样。</p>
+</li>
+</ol>
+<p><strong>效果比对</strong>：在网易有道的场景下（客服问答以及一些toB客户的场景），openai的ada2 embedding的检索准确率只有60%，而经过训练的BCEmbedding检索准确率可以达到95%。</p>
+<p><strong>实验现象</strong>：数据标签的构建对模型的效果影响非常大。<br>在机器学习中，模型性能上不去的时候，大多是因为一些例子比较难，模型训练时见的少，多挖掘一些难例给模型，就能提升模型的性能。但是在训练Embedding模型时，发现难例挖掘反而会降低模型的性能。</p>
+<p><strong>猜测原因</strong>：Embedding模型本身的能力有限，不应该给过难的任务。</p>
+<ol>
+<li>很多难负样本只有细微差异，“相似程度”很高，强行让Embedding模型区分只会让它感到困惑。</li>
+<li>在大量语料库中，自动化地进行难负样例挖掘而不经过人工校验，难免会“挖到正例”，这会毒害模型训练。</li>
+<li>所谓的“正例”和“难负样例”需要根据业务定义，RAG场景下之前人们认为的难负样例可能就成了正例。</li>
+</ol>
+<p>实际操作时，QAnything的向量库采用<code>milvus</code>的混合检索（BM25 + 向量检索），不设置阈值，返回top100的结果。</p>
+<p><strong>为什么需要Reranker模块？</strong></p>
+<p>Embedding阶段尽可能召回用户问题所需的相关文本片段，而Reranker的目标是越相关的、对回答问题越有帮助的片段应该在越靠前的位置，过滤低质量片段。</p>
+<p>因为Embedding模型是dual-encoder（在这种架构中，有两个独立的编码器分别对输入的两个部分进行编码），query和passage在“离线”地语义向量提取时<strong>没有信息交互</strong>，全靠模型将query和passages“硬”编码到语义空间中，再去语义检索。而rerank的阶段，cross-encoder可以让两个文本片段一开始就在BERT模型各层中通过self-attention进行交互，充分交互query和passage信息，识别更加准确的语义关系，潜力大的多。所以我们定了目标，embedding尽可能提高召回，reranker尽可能提高精度。</p>
+<p>此外，QAnything在产品实践中发现，当知识库语料增大时，里面会充斥很多<strong>干扰信息</strong>，Embedding模型由于其能力有限，通过语义向量检索到的相关片段整体质量变差，导致LLM回答效果变差。采用二阶段方式时，精排Reranker可以对检索到的相关片段进行进一步重排和过滤，可以显著提升最终检索的质量，实现<strong>数据越多问答效果越好</strong>的愿景。</p>
+<p>对于RAG系统，如果喂给大模型的输入是相近且容易混淆的话，对正确性的影响是很大的。比如，问题是“大连医科大学怎么样”，可能会匹配到“大连理工大学XXX怎么样”，看起来和用户问题非常像，Embedding给它打了比较高的分数。而类似“大连医科大学师资介绍”这样的片段相关性就稍微低了些。<strong>文本片段与query的相似性和文本片段是否包含query的答案（相关性）是两回事。</strong>RAG中非常重要的矛盾点在于，检索召回的片段比较多，但是LLM的输入token是有限制的，所以必须把能回答query问题的片段（和问题最相关）给LLM。</p>
+<p>实际操作时，reranker的阈值设置在0.35。</p>
+<hr>
+<p>在实际使用中，因为rerank比embedding慢得多，所以一般用两阶段检索。速度慢不是cross-encoder的模型比dual-encoder的模型速度慢。关键在于，dual-encoder可以离线计算海量文本块的向量化表示，把它们暂存在向量数据库中，在问答检索的时候只需要计算一个query的向量化表示就可以了。拿着query的向量表示去库里找最相似的文本即可。</p>
+<p>但是cross-encoder需要<strong>实时计算</strong>两个文本块的相关度，如果候选文本有几万条，每一条都需要和query一起送进BERT模型中算一遍，需要实时算几万次。这个成本是非常巨大的。</p>
+<p>所以，我们可以把检索过程分为两个阶段：召回（粗排）和重排:</p>
+<ul>
+<li>第一个阶段的目标是尽可能多的召回相似的文本片段，这个阶段的文本得分排序不是特别靠谱，所以候选的topK可以设置大一些，比如topK=100；</li>
+<li>第二个阶段的目标是对100个粗排的候选文本片段进行重新排序，用cross-encoder计算100个候选文本和query的相关度得分；</li>
+</ul>
+<p>两阶段检索结合可以兼顾效果和效率。</p>
+<h2 id="LLM模型微调"><a href="#LLM模型微调" class="headerlink" title="LLM模型微调"></a>LLM模型微调</h2><p>QAnything在Qwen-7B的基础上，通过精心构建的中英文高质量指令数据进行微调得到Qwen-7B-QAnything。通过在优秀的开源大型语言模型的基础上进行后续训练，包括继续预训练、指令微调（SFT）和偏好对齐等工作，可以更有效地满足RAG应用对大模型的特定需求，从而实现高性价比的模型优化。</p>
+<p><strong>为什么需要微调？</strong></p>
+<p>RAG技术结合了知识检索和生成模型，通过从外部知识源检索信息，并将这些信息与用户问题整合成完整的Prompt输入到大模型中，以便根据这些参考信息回答问题。然而，当面对含有专业术语或者通俗缩写的开放性问题时，<strong>直接使用开源Chat模型可能会导致模型回答不准确</strong>。此外，为了最大化利用大模型的上下文窗口，RAG应用倾向于保留尽可能多的检索信息，这可能会使模型的注意力分散，降低其遵循指令的能力，进而引发回答中的重复内容、关键信息丢失等问题。为了提高大模型在参考信息不足时的诚实度，加入<strong>与用户问题关联度低的负样本</strong>进行微调训练变得必要。</p>
+<p>在指令微调时，采用了结构化指令模板，以增强模型在实际应用中的指令遵循能力。</p>
+<p><strong>微调过程</strong></p>
+<ol>
+<li><p>指令微调数据构造</p>
+<p> 网易有道团队构造了丰富的指令微调数据集，涵盖了多种类型的数据，包括基于参考信息的结构化问答数据（单文档/多文档的事实问答、多文档的归纳总结/推理类问答、信息抽取）、多轮对话查询重写、段落摘要、开放域问答、中英文翻译以及跨学科问答等。</p>
+</li>
+<li><p>指令微调模型训练</p>
+<p> 首先采用LoRA方法进行微调探索，待实验条件稳定后，再转向全参数微调。LoRA微调配置如下：使用8张A40显卡的单机环境，初始学习率设为3e-5，每张卡的批量大小为2，采用16步的梯度累积，同时利用bfloat16精度训练以避免溢出并增强稳定性。此外，我们采用QLoRA + DeepSpeed Zero2 + FlashAttention配置以节约训练所需的显存。QLoRA通过4比特量化技术压缩预训练语言模型，使用NormalFloat4数据类型存储基模型权重，冻结基模型参数，并以低秩适配器（LoRA参数）形式添加少量可训练参数。在微调阶段，QLoRA将权重从NormalFloat4数据类型反量化为bfloat16进行前向和后向传播，仅更新bfloat16格式的LoRA参数权重梯度。</p>
+</li>
+<li><p>指令微调模型问答效果评估</p>
+<p> 参考了<code>Benchmarking Large Language Models in Retrieval-Augmented Generation</code>这篇文章，使用开源Benchmark的事实型文档问答测试集，对微调之后的LLM做质量评估。相比于Qwen-7B和Qwen-7B-Chat，微调之后的模型对检索外部知识源包含不相关信息的鲁棒性更好。</p>
+<p> 此外，团队内部针对业务场景构造700条问答对作为评测集，覆盖多种文档类型和问题，其中相关参考信息由BCE Embedding和Rerank模型检索重排序得到，参考答案由GPT4生成，结合人工修正得到。结合<code>Ragas</code>评测框架实现对LLM的自动化评测。评测指标采用<code>answer_correctness</code>，通过计算LLM回答内容<code>answer</code>和参考答案的<code>factual correctness</code>和<code>semantic similarity</code>加权和得到，其中<code>factual correctness</code>（权重系数0.75）利用GPT4根据<code>answer</code>和参考答案生成TP/FN/FP表述计算得分，<code>semantic similarity</code>（权重系数0.25）利用BCE Embedding计算<code>answer</code>和参考答案的语义相似度。</p>
+</li>
+</ol>
+<p>【参考文献】</p>
+<ol>
+<li><p><a target="_blank" rel="noopener" href="https://github.com/netease-youdao/QAnything">QAnything</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/FUex1Q984-IhQ-FoLZTf5Q">有道QAnything背后的故事—-关于RAG的一点经验分享</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/NUW4jRvhNFZHVFCeUlBe9A">QAnything之BCEmbedding技术路线</a></p>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/08/04/FlashAttention%E4%B8%8EPagedAttention/" rel="prev" title="FlashAttention与PagedAttention">
+      <i class="fa fa-chevron-left"></i> FlashAttention与PagedAttention
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/08/04/%E4%BD%8D%E7%BD%AE%E7%BC%96%E7%A0%81/" rel="next" title="位置编码">
+      位置编码 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let activeClass = CONFIG.comments.activeClass;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A3%80%E7%B4%A2%E5%99%A8"><span class="nav-text">检索器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#LLM%E6%A8%A1%E5%9E%8B%E5%BE%AE%E8%B0%83"><span class="nav-text">LLM模型微调</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">suhejian</p>
+  <div class="site-description" itemprop="description">Stay hungry, stay foolish.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">18</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/suhejian" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;suhejian" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i></a>
+      </span>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">suhejian</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v7.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> v7.7.1
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+<script type="text/x-mathjax-config">
+    MathJax.Ajax.config.path['mhchem'] = '//cdn.jsdelivr.net/npm/mathjax-mhchem@3';
+
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$', '$'], ['\\(', '\\)'] ],
+      processEscapes: true,
+      skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+    },
+    TeX: {
+        extensions: ['[mhchem]/mhchem.js'],
+      equationNumbers: {
+        autoNumber: 'AMS'
+      }
+    }
+  });
+
+  MathJax.Hub.Register.StartupHook('TeX Jax Ready', function() {
+    MathJax.InputJax.TeX.prefilterHooks.Add(function(data) {
+      if (data.display) {
+        var next = data.script.nextSibling;
+        while (next && next.nodeName.toLowerCase() === '#text') {
+          next = next.nextSibling;
+        }
+        if (next && next.nodeName.toLowerCase() === 'br') {
+          next.parentNode.removeChild(next);
+        }
+      }
+    });
+  });
+
+  MathJax.Hub.Queue(function() {
+    var all = MathJax.Hub.getAllJax(), i;
+    for (i = 0; i < all.length; i += 1) {
+      element = document.getElementById(all[i].inputID + '-Frame').parentNode;
+      if (element.nodeName.toLowerCase() == 'li') {
+        element = element.parentNode;
+      }
+      element.classList.add('has-jax');
+    }
+  });
+</script>
+<script>
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML', () => {
+    MathJax.Hub.Typeset();
+  }, window.MathJax);
+</script>
+
+    
+
+  
+
+</body>
+</html>
